@@ -1,5 +1,12 @@
 """Numerical algebraic curves and Abelian functions."""
 
+from .curves import (
+    Curve, CurveBranchLocus, CurveChart, CurveCheck, CurveFirstKindPeriods,
+    CurveGenus, CurveHomology, CurveIntegral, CurveLatticeReduction,
+    CurveMonodromy, CurvePath, CurvePlace, CurveRiemannConstant,
+    CurveSecondKindAbelMap, CurveSecondKindPeriods, CurveValidation,
+    algebraic_curve,
+)
 from .kleinian import (
     kleinian_baker_akhiezer, kleinian_p, kleinian_sigma,
     kleinian_sigma_jet, kleinian_zeta,
@@ -12,6 +19,11 @@ except ImportError:  # pragma: no cover - generated in builds by setuptools-scm
     __version__ = "0+unknown"
 
 __all__ = [
-    "kleinian_baker_akhiezer", "kleinian_p", "kleinian_sigma",
-    "kleinian_sigma_jet", "kleinian_zeta", "rtheta", "rtheta_jet",
+    "Curve", "CurveBranchLocus", "CurveChart", "CurveCheck",
+    "CurveFirstKindPeriods", "CurveGenus", "CurveHomology", "CurveIntegral",
+    "CurveLatticeReduction", "CurveMonodromy", "CurvePath", "CurvePlace",
+    "CurveRiemannConstant", "CurveSecondKindAbelMap", "CurveSecondKindPeriods",
+    "CurveValidation", "algebraic_curve", "kleinian_baker_akhiezer",
+    "kleinian_p", "kleinian_sigma", "kleinian_sigma_jet", "kleinian_zeta",
+    "rtheta", "rtheta_jet",
 ]

@@ -8,9 +8,12 @@ integrable systems.
 Genera uses `mpmath <https://mpmath.org/>`_ for arbitrary-precision arithmetic.
 It is an independent project and does not modify the mpmath namespace.
 
-The migrated public functions are available directly from Genera::
+The migrated public interface is available directly from Genera::
 
-    from genera import kleinian_sigma, rtheta
+    from genera import algebraic_curve, kleinian_sigma, rtheta
+
+    curve = algebraic_curve((0, -1, 0, 1))
+    print(curve.genus)
 
 The numerical implementation began in the mpmath ``algebraic-curve``
 development branch. Genera retains the applicable BSD-3-Clause copyright and
@@ -33,5 +36,5 @@ Run the local checks with::
     .venv/bin/sphinx-build -W -b html docs build/sphinx/html
     .venv/bin/python -m build
 
-The public numerical API will be added incrementally during migration from the
-mpmath algebraic-curve development branch.
+Further numerical APIs and documentation will be added incrementally during
+migration from the mpmath algebraic-curve development branch.
