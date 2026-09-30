@@ -18,6 +18,19 @@ Riemann theta functions
 
 .. autofunction:: genera.rtheta_jet
 
+Kleinian functions
+------------------
+
+.. autofunction:: genera.kleinian_sigma
+
+.. autofunction:: genera.kleinian_sigma_jet
+
+.. autofunction:: genera.kleinian_zeta
+
+.. autofunction:: genera.kleinian_p
+
+.. autofunction:: genera.kleinian_baker_akhiezer
+
 .. toctree::
    :maxdepth: 1
 

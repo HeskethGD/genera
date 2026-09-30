@@ -1,15 +1,16 @@
 Genera
 ======
 
-Genera is an early-stage Python package for arbitrary-precision numerical
-algebraic curves, Abelian functions, and applications to integrable systems.
+Genera is an early-stage Python package for arbitrary-precision computation
+with algebraic curves and Abelian functions, particularly for applications in
+integrable systems.
 
 Genera uses `mpmath <https://mpmath.org/>`_ for arbitrary-precision arithmetic.
 It is an independent project and does not modify the mpmath namespace.
 
-The first migrated public functions are available directly from Genera::
+The migrated public functions are available directly from Genera::
 
-    from genera import rtheta, rtheta_jet
+    from genera import kleinian_sigma, rtheta
 
 The numerical implementation began in the mpmath ``algebraic-curve``
 development branch. Genera retains the applicable BSD-3-Clause copyright and

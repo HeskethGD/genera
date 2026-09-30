@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "genera"
-description = "Arbitrary-precision numerical algebraic curves and Abelian functions"
+description = "Arbitrary-precision computation with algebraic curves and Abelian functions"
 readme = "README.rst"
 license = "BSD-3-Clause"
 requires-python = ">=3.11"
