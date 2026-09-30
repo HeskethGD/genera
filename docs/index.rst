@@ -10,3 +10,15 @@ migration from the mpmath algebraic-curve development branch. Genera's
 implementations receive an mpmath numerical context internally, allowing them
 to respect the caller's working precision without modifying mpmath's public
 namespace.
+
+Riemann theta functions
+-----------------------
+
+.. autofunction:: genera.rtheta
+
+.. autofunction:: genera.rtheta_jet
+
+.. toctree::
+   :maxdepth: 1
+
+   references

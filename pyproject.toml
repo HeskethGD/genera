@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "genera"
 description = "Arbitrary-precision numerical algebraic curves and Abelian functions"
 readme = "README.rst"
+license = "BSD-3-Clause"
 requires-python = ">=3.11"
 dependencies = ["mpmath>=1.4.1"]
 dynamic = ["version"]
@@ -47,7 +48,7 @@ namespaces = false
 version_file = "src/genera/_version.py"
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "docs"]
+testpaths = ["src/genera", "tests", "docs"]
 doctest_optionflags = ["IGNORE_EXCEPTION_DETAIL", "ELLIPSIS"]
 addopts = "--doctest-modules --doctest-glob='*.rst'"
 filterwarnings = ["error::DeprecationWarning"]
