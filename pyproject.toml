@@ -1,0 +1,80 @@
+[build-system]
+requires = ["setuptools>=77", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "genera"
+description = "Arbitrary-precision numerical algebraic curves and Abelian functions"
+readme = "README.rst"
+requires-python = ">=3.11"
+dependencies = ["mpmath>=1.4.1"]
+dynamic = ["version"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
+
+[project.urls]
+Repository = "https://github.com/HeskethGD/genera"
+Issues = "https://github.com/HeskethGD/genera/issues"
+
+[project.optional-dependencies]
+test = ["pytest>=8", "pytest-cov>=5"]
+lint = ["ruff>=0.11"]
+docs = ["sphinx>=7"]
+build = ["build>=1"]
+ci = ["diff-cover>=9"]
+develop = [
+    "genera[test,lint,docs,build,ci]",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = false
+
+[tool.setuptools_scm]
+version_file = "src/genera/_version.py"
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "docs"]
+doctest_optionflags = ["IGNORE_EXCEPTION_DETAIL", "ELLIPSIS"]
+addopts = "--doctest-modules --doctest-glob='*.rst'"
+filterwarnings = ["error::DeprecationWarning"]
+xfail_strict = true
+
+[tool.coverage.run]
+branch = true
+source = ["genera"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "return NotImplemented",
+    "if __name__ == .__main__.:",
+]
+show_missing = true
+
+[tool.coverage.html]
+directory = "build/coverage/html"
+
+[tool.ruff]
+line-length = 200
+preview = true
+
+[tool.ruff.lint]
+select = [
+    "E101", "E111", "E112", "E113", "E501", "E703", "E712", "E713",
+    "W191", "W291", "W292", "W293", "W391", "W605",
+]
