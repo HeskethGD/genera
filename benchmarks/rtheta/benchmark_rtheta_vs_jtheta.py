@@ -470,7 +470,7 @@ def make_report(args, rows, sweep_rows):
         "at each precision.",
         "",
         "The sweep arguments follow the same deterministic distribution as "
-        "the existing `benchmark_jtheta_boundaries_pyperf.py` benchmark: "
+        "the existing `benchmark_rtheta_vs_jtheta.py` benchmark: "
         "their real parts cover 0.1 to 0.9 and their small imaginary parts "
         "are distributed using the golden-ratio conjugate. This represents "
         "repeated evaluation along a plot or trajectory without adding "

@@ -4,12 +4,6 @@ References
 The following works are cited by Genera's documentation and numerical
 implementations.
 
-.. [BEH2005] H. W. Braden, V. Z. Enolskii and A. N. W. Hone.
-             "Bilinear Recurrences and Addition Formulae for Hyperelliptic
-             Sigma Functions". *Journal of Nonlinear Mathematical Physics*
-             12, Supplement 2 (2005), 46--62.
-             https://arxiv.org/abs/math/0501162
-
 .. [BEL1997] V. M. Buchstaber, V. Z. Enolskii and D. V. Leykin.
              "Hyperelliptic Kleinian Functions and Applications".
              *American Mathematical Society Translations*, Series 2, 179

@@ -4,7 +4,7 @@
 Run from the repository root with the normal mpmath development environment::
 
     .venv/bin/python \
-        my_data/riemann_theta/benchmark_hyperelliptic_vs_pari.py
+        benchmarks/rtheta/benchmark_hyperelliptic_vs_pari.py
 
 A PARI build exposing ``hyperellperiods`` is required (tested with the
 2.18.1 alpha). Set ``PARI_GP`` when ``gp`` is not on PATH. Interpreter startup
@@ -249,7 +249,7 @@ def markdown(rows, args, gp, pari_version):
     """Render a reproducible Markdown benchmark report."""
     command = (
         ".venv/bin/python "
-        "my_data/riemann_theta/benchmark_hyperelliptic_vs_pari.py")
+        "benchmarks/rtheta/benchmark_hyperelliptic_vs_pari.py")
     lines = [
         "# Hyperelliptic period comparison with PARI/GP",
         "",

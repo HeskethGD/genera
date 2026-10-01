@@ -4,7 +4,7 @@
 Run from the repository root with the normal mpmath environment::
 
     .venv/bin/python \
-        my_data/riemann_theta/benchmark_hyperelliptic_vs_sage.py
+        benchmarks/rtheta/benchmark_hyperelliptic_vs_sage.py
 
 The comparison covers Sage's arbitrary-precision Riemann-surface machinery
 (also used by the nbruin/RiemannTheta examples) and abelfunctions' independent
@@ -251,7 +251,7 @@ def markdown(rows, args, sage):
     """Render the Sage comparisons as a Markdown report."""
     command = (
         ".venv/bin/python "
-        "my_data/riemann_theta/benchmark_hyperelliptic_vs_sage.py "
+        "benchmarks/rtheta/benchmark_hyperelliptic_vs_sage.py "
         "--cases " + " ".join(args.cases))
     lines = [
         "# Hyperelliptic period comparison with Sage",

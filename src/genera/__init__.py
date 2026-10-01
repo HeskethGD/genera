@@ -8,8 +8,7 @@ from .curves import (
     algebraic_curve,
 )
 from .kleinian import (
-    kleinian_baker_akhiezer, kleinian_p, kleinian_sigma,
-    kleinian_sigma_jet, kleinian_zeta,
+    kleinian_p, kleinian_sigma, kleinian_sigma_jet, kleinian_zeta,
 )
 from .riemann_theta import rtheta, rtheta_jet
 
@@ -23,7 +22,7 @@ __all__ = [
     "CurveFirstKindPeriods", "CurveGenus", "CurveHomology", "CurveIntegral",
     "CurveLatticeReduction", "CurveMonodromy", "CurvePath", "CurvePlace",
     "CurveRiemannConstant", "CurveSecondKindAbelMap", "CurveSecondKindPeriods",
-    "CurveValidation", "algebraic_curve", "kleinian_baker_akhiezer",
-    "kleinian_p", "kleinian_sigma", "kleinian_sigma_jet", "kleinian_zeta",
+    "CurveValidation", "algebraic_curve", "kleinian_p", "kleinian_sigma",
+    "kleinian_sigma_jet", "kleinian_zeta",
     "rtheta", "rtheta_jet",
 ]

@@ -7,7 +7,7 @@ Sage and abelfunctions represent the standard algebraic differential as `x^k dx/
 ## Reproduction
 
 ```console
-.venv/bin/python my_data/riemann_theta/benchmark_hyperelliptic_vs_sage.py --cases g1-symmetric g2-irregular
+.venv/bin/python benchmarks/rtheta/benchmark_hyperelliptic_vs_sage.py --cases g1-symmetric g2-irregular
 ```
 
 - Date: 2026-10-01T14:05:56.722801+00:00

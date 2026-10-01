@@ -4,7 +4,7 @@
 Run this script with the dedicated comparison environment::
 
     PYTHONPATH="$PWD" venv/flint/bin/python \
-        my_data/riemann_theta/benchmark_rtheta_vs_flint.py
+        benchmarks/rtheta/benchmark_rtheta_vs_flint.py
 
 Inputs and result construction are excluded from timed regions. The repeated
 workloads retain one fixed period matrix while evaluating a sequence of

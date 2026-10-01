@@ -2,9 +2,10 @@ import pytest
 
 import genera.kleinian as kleinian_module
 from genera import (
-    kleinian_baker_akhiezer, kleinian_p, kleinian_sigma,
+    kleinian_p, kleinian_sigma,
     kleinian_sigma_jet, kleinian_zeta,
 )
+from genera.kleinian import kleinian_baker_akhiezer
 from mpmath import diff, log, mp
 
 
