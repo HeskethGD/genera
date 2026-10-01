@@ -18,4 +18,5 @@ with :doc:`algebraic_curves` and :doc:`abelian`.
 
    algebraic_curves
    abelian
+   examples
    references
