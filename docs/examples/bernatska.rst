@@ -1,13 +1,5 @@
-Examples
---------
-
-The examples below connect the public Genera API to calculations from the
-mathematical literature. The complete runnable programs are kept in the
-repository's ``examples/`` directory; the documentation extracts the parts
-that explain the numerical pipeline.
-
 Bernatska's trigonal curve
-...........................
+==========================
 
 This example follows Examples 3 and 3a--3b of J. Bernatska,
 `Computation of P-Functions on Plane Algebraic Curves
@@ -21,7 +13,7 @@ Genera repository root with::
    .venv/bin/python -m examples.bernatska.bernatska_trigonal_demo
 
 The curve
-..........
+---------
 
 Bernatska's equation (73) is the trigonal :math:`(3,4)` curve
 
@@ -51,7 +43,7 @@ hyperelliptic models. Genera computes its branch locus, monodromy, genus, and
 homology from the projection to the ``x``-plane. The expected genus is three.
 
 Holomorphic and second-kind differentials
-..........................................
+------------------------------------------
 
 For a plane curve, a differential written as ``h(x, y) dx / f_y`` is passed to
 Genera as a callable returning the coefficient of ``dx``. Here
@@ -96,7 +88,7 @@ The corresponding code is kept in the runnable example and has this shape::
        return first_kind, second_kind
 
 Constructing compatible period data
-....................................
+------------------------------------
 
 Because the caller supplies the differential bases, the example constructs a
 ``Curve`` with the mpmath context and passes the forms explicitly::
@@ -129,7 +121,7 @@ forms the paper-basis ``omega``, ``omega_prime``, ``eta``, and ``eta_prime``.
 This is a change of homology basis, not a fitted numerical scale factor.
 
 Evaluating Kleinian P-functions
-.................................
+-------------------------------
 
 For the Abelian vector and characteristic printed in Example 3a, the script
 evaluates eight second- and third-order P-functions in one batched call::
@@ -155,4 +147,13 @@ The resulting validation chain is::
 
 The complete script reports residuals for the branch points, period matrices,
 symmetry conditions, and the P-function values against the six-digit tables
-in the paper.
+in the paper. The following directive runs that complete script during every
+documentation build and displays its captured output. A nonzero exit status
+fails the documentation build.
+
+Validation output
+-----------------
+
+.. genera-example:: examples.bernatska.bernatska_trigonal_demo
+   :caption: Output from the Bernatska validation example:
+   :timeout: 120
