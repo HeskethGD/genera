@@ -1,0 +1,1 @@
+"""Bernatska trigonal example."""

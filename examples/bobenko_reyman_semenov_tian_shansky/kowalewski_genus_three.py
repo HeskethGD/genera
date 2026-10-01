@@ -1,0 +1,241 @@
+#!/usr/bin/env python3
+"""Check the genus-three Kowalewski formula of Bobenko et al."""
+
+import argparse
+
+from genera import rtheta, rtheta_jet
+from mpmath import mp
+
+from examples._rk4 import rk4_trajectory
+
+
+mp.dps = 30
+
+tau = mp.matrix([
+    [mp.mpc("-1.4167975950708838", "0.7850043126602884"),
+     mp.mpc("-0.3454058539987599", "0.0108719647228774"),
+     mp.mpc("1.5832024049291242", "-0.7145033905769181")],
+    [mp.mpc("-0.3454058539987745", "0.0108719647228998"),
+     mp.mpc("0.0856784508858941", "0.0477513704373007"),
+     mp.mpc("-0.3454058539987747", "0.0108719647228998")],
+    [mp.mpc("1.5832024049291098", "-0.7145033905768952"),
+     mp.mpc("-0.3454058539987707", "0.0108719647229234"),
+     mp.mpc("-1.4167975950708986", "0.7850043126603116")],
+])
+# The independently integrated entries differ across the diagonal by about
+# 2e-14.  Project the external numerical data onto its exact symmetric form
+# before asking rtheta to validate it at 30-digit working precision.
+tau = (tau + tau.T) / 2
+velocity = mp.matrix([
+    mp.mpc("-0.0496797438629430", "0.0048411751083748"),
+    mp.mpc("0.0032224203740264", "-0.0195489988450696"),
+    mp.mpc("-0.0496797438629420", "0.0048411751083599"),
+])
+r_from_abel = mp.matrix([
+    mp.mpc(0, "0.5528062206626531"),
+    0,
+    mp.mpc(0, "-0.5528062206626164"),
+])
+r_vector = r_from_abel
+zero_plus = mp.matrix([
+    mp.mpc("-0.3616583527767097", "0.3508874460882212"),
+    mp.mpc("-0.1780294655302932", "0.1264701281265881"),
+    mp.mpc("-0.3616583527767367", "-0.2019187745750049"),
+])
+zero_minus = mp.matrix([
+    mp.mpc("0.3616583527767067", "0.2019187745744802"),
+    mp.mpc("0.1780294655303256", "-0.1264701281266026"),
+    mp.mpc("0.3616583527767618", "-0.3508874460877124"),
+])
+third_scalar = mp.mpc(0, "0.19778648270564")
+epsilon = ([0, 0, 0], [0, mp.mpf("0.5"), 0])
+prym_tau = mp.matrix([
+    [mp.mpc("0.3328096197164521", "0.1410018441667864"),
+     mp.mpc("-0.6908117079975306", "0.0217439294458008")],
+    [mp.mpc("-0.6908117079975490", "0.0217439294457996"),
+     mp.mpc("0.0856784508858941", "0.0477513704373007")],
+])
+prym_tau = (prym_tau + prym_tau.T) / 2
+# The difference coordinate has index-two lattice spacing in the split sum.
+# Thus the elliptic theta in (7.64) maps to Genera with twice the normalized
+# b1 period of du1-du3 (the paper calls half of B0 the elliptic period).
+b0 = mp.matrix([[2 * (tau[0, 0] - tau[2, 0])]])
+
+def theta_data(argument, characteristic=None):
+    """Return theta and its directional derivative along the flow."""
+    jet = rtheta_jet(argument, tau, 1, characteristic)
+    gradient = mp.matrix([jet[(1, 0, 0)], jet[(0, 1, 0)],
+                          jet[(0, 0, 1)]])
+    return jet[(0, 0, 0)], sum(
+        velocity[index] * gradient[index] for index in range(3))
+
+
+def solution(time, p1, p2):
+    """Evaluate the six variables in Theorem 7.7, equation (7.42)."""
+    phase = mp.matrix([p1 / 2, p2, p1 / 2]) + velocity * time
+    theta, dtheta = theta_data(phase)
+    theta_e, dtheta_e = theta_data(phase, epsilon)
+    theta_r = rtheta(phase - r_vector, tau)
+    theta_er = rtheta(phase - r_vector, tau, epsilon)
+
+    a_value = rtheta(zero_minus + phase, tau)
+    b_value = rtheta(zero_plus + phase, tau)
+    # Both marked paths differ from the generated paths by an odd B2
+    # coefficient.  For epsilon this supplies the relative multiplier -1.
+    c_value = -rtheta(zero_minus + phase, tau, epsilon)
+    d_value = -rtheta(zero_plus + phase, tau, epsilon)
+    denominator = a_value * d_value + b_value * c_value
+
+    l_minus = 2j * third_scalar * theta_r / theta
+    l_plus = 2j * third_scalar * theta_er / theta_e
+    ell1 = (l_plus + l_minus) / 2
+    ell2 = (l_plus - l_minus) / (2j)
+    ell3 = -1j * (dtheta_e / theta_e - dtheta / theta)
+
+    g_minus = 2 * theta_e / theta * a_value * b_value / denominator
+    g_plus = 2 * theta / theta_e * c_value * d_value / denominator
+    g1 = (g_plus + g_minus) / 2
+    g2 = (g_plus - g_minus) / (2j)
+    g3 = -(a_value * d_value - b_value * c_value) / denominator
+    return (ell1, ell2, ell3), (g1, g2, g3)
+
+
+def invariants(ell, gravity):
+    """Return |g|^2, H, I1 and I2 for the classical top."""
+    ell1, ell2, ell3 = ell
+    g1, g2, g3 = gravity
+    norm = g1**2 + g2**2 + g3**2
+    hamiltonian = (ell1**2 + ell2**2 + 2 * ell3**2) / 2 - g1
+    i1 = (ell1 * g1 + ell2 * g2 + ell3 * g3)**2
+    i2 = (ell1**2 - ell2**2 + 2 * g1)**2 \
+        + 4 * (ell1 * ell2 + g2)**2
+    return norm, hamiltonian, i1, i2
+
+
+def euler_poisson_rhs(state):
+    """Return the classical Kowalewski Euler--Poisson vector field."""
+    ell1, ell2, ell3, gravity1, gravity2, gravity3 = state
+    return (
+        ell2 * ell3,
+        -ell1 * ell3 - gravity3,
+        gravity2,
+        2 * gravity2 * ell3 - gravity3 * ell2,
+        gravity3 * ell1 - 2 * gravity1 * ell3,
+        gravity1 * ell2 - gravity2 * ell1,
+    )
+
+
+def rk4_comparison(stop, steps, samples):
+    """Compare equation (7.42) with a direct Euler--Poisson integration."""
+    if steps <= 0 or samples <= 1 or steps % (samples - 1):
+        raise ValueError("steps must be positive and divisible by samples - 1")
+    phase1 = mp.mpc("-0.86020578672750655767", "0.37129178949707584365")
+    phase2 = mp.mpc("-0.82333617811367142382", "0.1887005817208524906")
+    times = tuple(stop * index / (samples - 1) for index in range(samples))
+    analytic = []
+    for time in times:
+        ell, gravity = solution(time, phase1, phase2)
+        analytic.append(tuple(ell) + tuple(gravity))
+    numeric = rk4_trajectory(
+        euler_poisson_rhs, analytic[0], times,
+        substeps=steps // (samples - 1),
+    )
+    component_errors = tuple(
+        max(abs(exact[index] - approximation[index])
+            for exact, approximation in zip(analytic, numeric))
+        for index in range(6)
+    )
+    imaginary = max(abs(mp.im(value))
+                    for state in analytic for value in state)
+    invariant_drift = max(
+        max(abs(value - reference)
+            for value, reference in zip(
+                invariants(state[:3], state[3:]),
+                invariants(analytic[0][:3], analytic[0][3:])))
+        for state in analytic
+    )
+    return component_errors, imaginary, invariant_drift
+
+
+def decomposition_residuals(p1, p2):
+    """Check the zero and epsilon cases of the decomposition (7.64)."""
+    phase = mp.matrix([p1 / 2, p2, p1 / 2])
+    w = [p1, p2]
+    genus1_zero = rtheta([0], b0)
+    genus1_half = rtheta(
+        [0], b0, ([mp.mpf("0.5")], [0]))
+    zero_rhs = (
+        rtheta(w, prym_tau) * genus1_zero
+        + rtheta(
+            w, prym_tau,
+            ([mp.mpf("0.5"), 0], [0, 0])) * genus1_half
+    )
+    epsilon_rhs = (
+        rtheta(
+            w, prym_tau,
+            ([0, 0], [0, mp.mpf("0.5")])) * genus1_zero
+        + rtheta(
+            w, prym_tau,
+            ([mp.mpf("0.5"), 0], [0, mp.mpf("0.5")])) * genus1_half
+    )
+    zero_lhs = rtheta(phase, tau)
+    epsilon_lhs = rtheta(phase, tau, epsilon)
+    return (
+        abs(zero_lhs - zero_rhs) / max(1, abs(zero_lhs)),
+        abs(epsilon_lhs - epsilon_rhs) / max(1, abs(epsilon_lhs)),
+    )
+
+
+def identity_760_ratio(time, p1, p2):
+    """Return the phase-dependent ratio that (7.60) says is constant."""
+    phase = mp.matrix([p1 / 2, p2, p1 / 2]) + velocity * time
+    a_value = rtheta(zero_minus + phase, tau)
+    b_value = rtheta(zero_plus + phase, tau)
+    c_value = -rtheta(zero_minus + phase, tau, epsilon)
+    d_value = -rtheta(zero_plus + phase, tau, epsilon)
+    return ((a_value * d_value + b_value * c_value)
+            / (rtheta(phase, tau)
+               * rtheta(phase, tau, epsilon)))
+
+
+def parse_arguments():
+    """Parse numerical-comparison options."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--dps", type=int, default=30)
+    parser.add_argument("--stop", default="2")
+    parser.add_argument("--steps", type=int, default=400)
+    parser.add_argument("--samples", type=int, default=41)
+    parser.add_argument("--tol", default="1e-6")
+    return parser.parse_args()
+
+
+def main():
+    """Print formula checks and the analytic-versus-RK4 comparison."""
+    arguments = parse_arguments()
+    mp.dps = arguments.dps
+    phases = ((mp.mpc("0.13", "0.07"), mp.mpc("-0.09", "0.04")),
+              (mp.mpc("0.21", "-0.03"), mp.mpc("0.08", "0.11")))
+    for p1, p2 in phases:
+        print("phase:", p1, p2)
+        print(" decomposition residuals:", decomposition_residuals(p1, p2))
+        print(" equation (7.60) ratios:",
+              identity_760_ratio(0, p1, p2),
+              identity_760_ratio(mp.mpf("0.17"), p1, p2))
+        for time in (0, mp.mpf("0.17")):
+            ell, gravity = solution(time, p1, p2)
+            print(" t =", time)
+            print(" ell =", tuple(ell))
+            print(" g =", tuple(gravity))
+            print(" invariants =", invariants(ell, gravity))
+    errors, imaginary, invariant_drift = rk4_comparison(
+        mp.mpf(arguments.stop), arguments.steps, arguments.samples)
+    print("maximum component errors versus RK4:",
+          tuple(mp.nstr(error, 8) for error in errors))
+    print("maximum imaginary component:", mp.nstr(imaginary, 8))
+    print("maximum analytic invariant drift:", mp.nstr(invariant_drift, 8))
+    if max(errors + (imaginary, invariant_drift)) > mp.mpf(arguments.tol):
+        raise SystemExit("genus-three formula failed its numerical tolerance")
+
+
+if __name__ == "__main__":
+    main()

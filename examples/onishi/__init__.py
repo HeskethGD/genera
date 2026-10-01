@@ -1,0 +1,1 @@
+"""Onishi determinant example."""

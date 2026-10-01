@@ -38,3 +38,16 @@ Run the local checks with::
 
 Further numerical APIs and documentation will be added incrementally during
 migration from the mpmath algebraic-curve development branch.
+
+Examples
+--------
+
+Literature-based numerical examples live in the repository's ``examples/``
+directory. They are not installed as part of the ``genera`` package and do
+not require plotting libraries. Run them from a source checkout, for example::
+
+    .venv/bin/python -m examples.manakov.manakov_kleinian_demo
+
+The dynamics examples compare their Abelian-function solutions against a
+shared arbitrary-precision Runge--Kutta implementation. Lightweight versions
+of the examples run in the test suite to keep the published workflows valid.
