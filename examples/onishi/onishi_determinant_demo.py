@@ -49,6 +49,7 @@ numerical examples.
 """
 
 import argparse
+from dataclasses import dataclass
 from fractions import Fraction
 from itertools import permutations
 from math import factorial
@@ -567,6 +568,109 @@ def default_sizes(genus):
         sizes.append(genus)
     sizes.append(genus + 2)
     return tuple(dict.fromkeys(sizes))
+
+
+@dataclass
+class DocumentationComparison:
+    """Four-point determinant comparisons and confluent identity checks."""
+
+    sample_x: tuple
+    sigma_values: tuple
+    determinant_values: tuple
+    dense_x: tuple
+    dense_determinants: tuple
+    scaled_errors: tuple
+    kiepert_errors: tuple
+    prefactor: int
+    kiepert_prefactors: tuple
+    stratum_residual: object
+
+
+def documentation_example():
+    """Check genus-two four-point identities at 30 decimal digits.
+
+    The first three curve points have x=4,5,6; the fourth varies over [7,9].
+    The Kiepert limit is checked at x=4 in both Abelian coordinates.
+    Signs are fixed by exact local calculations before theta evaluation.
+    """
+    with mp.workdps(30):
+        genus = 2
+        coefficients = curve_coefficients(genus)
+        curve = algebraic_curve(coefficients)
+        if curve.genus != genus:
+            raise RuntimeError("unexpected Onishi curve genus")
+        first = curve.periods_kind_1()
+        second = curve.periods_kind_2()
+        data = (first.omega, first.tau, second.kappa,
+                curve.riemann_constant().characteristic)
+        schur = schur_weierstrass_polynomial(genus)
+        prefactor = genera_prefactor(genus, 4, schur)
+        kiepert_prefactors = tuple(genera_kiepert_prefactor(genus, 4, j, schur)
+                                   for j in (1, 2))
+
+        def point_at(x):
+            return x, mp.sqrt(polynomial_value(coefficients, x)) / 2
+
+        def image_of(point):
+            x, y = point
+            return curve.abel_map_kind_1((x, 2 * y))
+
+        points = [point_at(mp.mpf(x)) for x in (4, 5, 6)]
+        images = [image_of(point) for point in points]
+        sample_x = tuple(mp.mpf(7) + mp.mpf(i) / 8 for i in range(17))
+        sigma_values, determinant_values, errors = [], [], []
+        all_images = list(images)
+        for x in sample_x:
+            point = point_at(x)
+            image = image_of(point)
+            all_images.append(image)
+            left, right = evaluate_formula(points + [point], images + [image],
+                                            data, genus, prefactor)
+            sigma_values.append(left)
+            determinant_values.append(right)
+            errors.append(abs(left - right) / max(1, abs(left), abs(right)))
+
+        kiepert_errors = []
+        for j, factor in zip((1, 2), kiepert_prefactors):
+            left, right = evaluate_kiepert_formula(
+                points[0], images[0], coefficients, data, genus, 4, j, factor)
+            kiepert_errors.append(abs(left - right) / max(1, abs(left), abs(right)))
+        # A curve point lies on sigma=0. The special derivative sigma_2,
+        # rather than sigma itself, supplies the denominators of the theorem.
+        stratum_residual = max(abs(sigma_derivative(image, (0, 0), data))
+                               for image in all_images)
+        if max((*errors, *kiepert_errors, stratum_residual)) > mp.mpf("1e-24"):
+            raise RuntimeError("Onishi sigma or determinant identity check failed")
+
+        dense_x = tuple(mp.mpf(7) + mp.mpf(i) / 64 for i in range(129))
+        dense_determinants = tuple(mp.det(mp.matrix([
+            onishi_monomials(px, py, genus, 4)
+            for px, py in points + [point_at(x)]
+        ])) for x in dense_x)
+        return DocumentationComparison(
+            sample_x, tuple(sigma_values), tuple(determinant_values),
+            dense_x, dense_determinants, tuple(errors), tuple(kiepert_errors),
+            prefactor, kiepert_prefactors, stratum_residual,
+        )
+
+
+def make_figure(result):
+    """Plot algebraic determinants and sigma evaluations; import on demand."""
+    import matplotlib.pyplot as plt
+    from examples._plotting import TEAL
+
+    figure, ax = plt.subplots(figsize=(7, 4.5))
+    ax.plot([float(x) for x in result.dense_x],
+            [float(mp.re(y)) for y in result.dense_determinants], "--",
+            color=TEAL, label="Algebraic determinant")
+    ax.plot([float(x) for x in result.sample_x],
+            [float(mp.re(y)) for y in result.sigma_values], "o",
+            color=TEAL, fillstyle="none", label="Sigma quotient")
+    ax.set_xlabel("Fourth point's x-coordinate")
+    ax.set_ylabel("Four-point determinant")
+    ax.legend()
+    figure.tight_layout()
+    return figure
 
 
 def default_kiepert_sizes(genus):

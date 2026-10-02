@@ -9,3 +9,8 @@ runnable programs remain in the repository's ``examples/`` directory.
    :maxdepth: 2
 
    bernatska
+   bobenko
+   kovalevskaya_original
+   manakov
+   neumann_moser
+   onishi

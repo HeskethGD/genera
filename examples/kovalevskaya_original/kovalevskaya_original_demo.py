@@ -64,6 +64,7 @@ Stages (--stage): rk4, curve, abel, theta, demo, all.
 """
 
 import argparse
+from dataclasses import dataclass
 
 from genera import algebraic_curve, rtheta
 from mpmath import mp
@@ -439,9 +440,9 @@ def main():
     if arguments.stage in ("theta", "demo", "all"):
         config = stage_theta(curve, periods, abel_data)
     if arguments.stage in ("demo", "all"):
-        unused_times, unused_states, unused_analytic, errors = stage_demo(
+        result = stage_demo(
             curve, periods, abel_data, config)
-        if max(errors) > mp.mpf(arguments.tol):
+        if max(result.errors) > mp.mpf(arguments.tol):
             raise SystemExit("theta solution failed its RK4 tolerance")
     return curve, periods
 
@@ -665,6 +666,8 @@ def stage_theta(curve, periods, abel_data, verbose=True):
         error = max(abs(value - kappa) for value in ratios) / scale
         report[slot] = (numerator, denominator, kappa, error)
     score = max(report[slot][3] for slot in SLOTS)
+    if max(score, max(identities), algebraic_error) > mp.mpf("1e-24"):
+        raise RuntimeError("algebraic or held-out theta-quotient check failed")
     if verbose:
         print("derived branch half-characteristics:")
         for index, characteristic in enumerate(branch_chars, 1):
@@ -753,7 +756,21 @@ def assemble_state(values, constants):
     return (p, q, r, g0, g1, g2)
 
 
-def stage_demo(curve, periods, abel_data, config, verbose=True):
+@dataclass
+class MotionComparison:
+    """Independent RK4 and theta grids, with errors at the theta samples."""
+
+    rk4_times: list
+    rk4_states: tuple
+    theta_times: list
+    theta_states: list
+    errors: list
+    rk4_refinement: object = None
+    rk4_error_ratio: object = None
+
+
+def stage_demo(curve, periods, abel_data, config, verbose=True, *,
+               rk4_samples=241, theta_stride=12, rk4_substeps=128):
     """Theta-function solution versus RK4 (the memoir's final formulas)."""
     mp.dps = 30
     tau = periods.tau
@@ -790,15 +807,21 @@ def stage_demo(curve, periods, abel_data, config, verbose=True):
     # must stay free of turning points for the continuously tracked P's).
     # The evaluated denominator stays nonzero on this demonstration window,
     # so the analytic side is regular across the sampled turning point.
-    t_values = [mp.mpf(i) * mp.mpf(6) / 100 for i in range(41)]  # 0 .. 2.4
-    states = rk4_trajectory(INITIAL, t_values)
+    t_values = [mp.mpf(i) * mp.mpf("2.4") / (rk4_samples - 1)
+                for i in range(rk4_samples)]
+    states = rk4_trajectory(INITIAL, t_values, substeps=rk4_substeps)
+    sample_indices = list(range(0, rk4_samples, theta_stride))
+    if sample_indices[-1] != rk4_samples - 1:
+        sample_indices.append(rk4_samples - 1)
+    theta_times = [t_values[i] for i in sample_indices]
+    sampled_states = [states[i] for i in sample_indices]
     analytic = []
-    for t in t_values:
+    for t in theta_times:
         v = v0 + velocity * t
         values = theta_side_values(v)
         analytic.append(assemble_state(values, constants))
     names = ("p", "q", "r", "g0", "g1", "g2")
-    errors = [max(abs(a[i] - s[i]) for a, s in zip(analytic, states))
+    errors = [max(abs(a[i] - s[i]) for a, s in zip(analytic, sampled_states))
               for i in range(6)]
     imaginary = [max(abs(mp.im(a[i])) for a in analytic) for i in range(6)]
     invariant_errors = []
@@ -812,9 +835,9 @@ def stage_demo(curve, periods, abel_data, config, verbose=True):
             return assemble_state(
                 theta_side_values(v0 + velocity * value), constants)
         state = analytic_state(t)
-        derivative = tuple(
-            mp.diff(lambda value, index=index: analytic_state(value)[index], t)
-            for index in range(6))
+        # Differentiate the vector once, sharing theta evaluations across
+        # all six components instead of recomputing it for each component.
+        derivative = mp.diff(lambda value: mp.matrix(analytic_state(value)), t)
         ode_errors.append(max(abs(a - b) for a, b in
                               zip(derivative, euler_poisson_rhs(state))))
     if verbose:
@@ -828,7 +851,80 @@ def stage_demo(curve, periods, abel_data, config, verbose=True):
               mp.nstr(max(invariant_errors), 4))
         print("max direct Euler-Poisson residual:",
               mp.nstr(max(ode_errors), 4))
-    return t_values, states, analytic, errors
+    if max(error, max(imaginary), max(invariant_errors), max(ode_errors)) > mp.mpf("1e-24"):
+        raise RuntimeError("theta solution failed its analytic checks")
+    return MotionComparison(t_values, states, theta_times, analytic, errors)
+
+
+def documentation_example(verbose=False):
+    """Run the checked 30-digit example without the long RK4-only stage.
+
+    Return independent grids and component errors. The same calculation
+    drives the documentation plot and its doctest.
+    """
+    with mp.workdps(30):
+        curve, periods = stage_curve(verbose)
+        locus = sorted(curve.branch_locus.branch_values)
+        if curve.genus != 2 or len(locus) != 5:
+            raise RuntimeError("unexpected spectral curve topology")
+        if max(abs(a - b) for a, b in zip(locus, sorted(FIVE))) > mp.mpf("1e-24"):
+            raise RuntimeError("spectral branch points failed their check")
+        abel_data = stage_abel(curve, periods, verbose)
+        residual = max(mp.norm(u - abel_data["abel0"] - abel_data["velocity"] * t)
+                       for u, t in zip(abel_data["abel"], abel_data["t_values"]))
+        if residual > mp.mpf("1e-8"):
+            raise RuntimeError("Abel flow failed its linearity check")
+        config = stage_theta(curve, periods, abel_data, verbose)
+        result = stage_demo(curve, periods, abel_data, config, verbose,
+                            rk4_samples=241, theta_stride=12, rk4_substeps=128)
+        coarse = rk4_trajectory(INITIAL, result.rk4_times, substeps=64)
+        result.rk4_refinement = max(abs(a - b)
+                                    for fine, rough in zip(result.rk4_states, coarse)
+                                    for a, b in zip(fine, rough))
+        coarse_error = max(abs(a - b)
+                           for t, state in zip(result.theta_times, result.theta_states)
+                           for a, b in zip(state, coarse[result.rk4_times.index(t)]))
+        result.rk4_error_ratio = coarse_error / max(result.errors)
+        if max(result.errors) > mp.mpf("1e-14"):
+            raise RuntimeError("theta solution failed its RK4 comparison")
+        if result.rk4_refinement > mp.mpf("1e-13"):
+            raise RuntimeError("RK4 step-refinement check failed")
+        if not 8 < result.rk4_error_ratio < 32:
+            raise RuntimeError("RK4 comparison did not show fourth-order convergence")
+        if verbose:
+            print("max RK4 change on halving the step:", mp.nstr(result.rk4_refinement, 4))
+            print("coarse/fine RK4 comparison error ratio:", mp.nstr(result.rk4_error_ratio, 5))
+        return result
+
+
+def make_figure(result):
+    """Plot the checked motion; return a Matplotlib figure.
+
+    Matplotlib is optional and is imported only when a plot is requested.
+    """
+    import matplotlib.pyplot as plt
+    from examples._plotting import comparison_styles
+
+    rk4_ts = [float(t) for t in result.rk4_times]
+    theta_ts = [float(t) for t in result.theta_times]
+    states = result.rk4_states
+    analytic = result.theta_states
+    names = ("p", "q", "r", "g0", "g1", "g2")
+    figure, axes = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
+    for ax, indices, label in ((axes[0], range(3), "Angular velocities"),
+                               (axes[1], range(3, 6), "Direction cosines")):
+        for style_index, index in enumerate(indices):
+            line_style, marker_style = comparison_styles(style_index)
+            ax.plot(rk4_ts, [float(s[index]) for s in states], **line_style,
+                            label=names[index] + " (RK4)")
+            ax.plot(theta_ts, [float(mp.re(a[index])) for a in analytic],
+                    **marker_style, label=names[index] + " (theta)")
+        ax.set_ylabel(label)
+        ax.legend(fontsize=8, ncol=3)
+    axes[1].set_xlabel("Time t")
+    figure.suptitle("Kovalevskaya top: the original memoir's solution")
+    figure.tight_layout()
+    return figure
 
 
 if __name__ == "__main__":

@@ -212,6 +212,28 @@ class Curve:
         part of ``omega**-1 * omega_prime``). Full periods are ``2*omega`` and
         ``2*omega_prime``.
 
+        For a holomorphic basis :math:`du_1,\ldots,du_g` and canonical
+        cycles :math:`a_j,b_j`, the matrix entries are
+
+        .. math::
+
+            \begin{aligned}
+            2\omega_{ij} &= \oint_{a_j} du_i, \\
+            2\omega'_{ij} &= \oint_{b_j} du_i, \\
+            \tau &= \omega^{-1}\omega'.
+            \end{aligned}
+
+        Rows index differentials and columns index cycles. For the elliptic
+        curve :math:`y^2=x^3-x`, the automatic basis has just one form,
+        :math:`du=dx/y`, so these matrices reduce to scalars:
+
+        .. math::
+
+            \begin{aligned}
+            2\omega &= \oint_a \frac{dx}{y}, \\
+            2\omega' &= \oint_b \frac{dx}{y}.
+            \end{aligned}
+
         With no arguments, uses the automatic differential basis: hyperelliptic
         curves get ``x**k dx/z`` in Baker marking; other curves get a basis from
         Newton polygon interior points when the edge and genus checks pass.
@@ -262,6 +284,33 @@ class Curve:
         and ``kappa``, with ``2*eta = -integral_a(dr)`` and
         ``2*eta_prime = -integral_b(dr)``. The returned ``kappa`` is the symmetric
         part of ``eta * omega**-1`` for the compatible first-kind half-periods.
+
+        Second-kind differentials :math:`dr_i` are meromorphic forms with
+        zero residues. Their cycle integrals define the half-periods with a
+        minus sign:
+
+        .. math::
+
+            \begin{aligned}
+            2\eta_{ij} &= -\oint_{a_j} dr_i, \\
+            2\eta'_{ij} &= -\oint_{b_j} dr_i, \\
+            \kappa &= \tfrac12\bigl(\eta\omega^{-1}
+                       +(\eta\omega^{-1})^{\mathsf T}\bigr).
+            \end{aligned}
+
+        For :math:`y^2=x^3-x`, the automatic BEL form is
+        :math:`dr=x\,dx/(4y)`. It has a double pole at infinity with zero
+        residue, whereas :math:`du=dx/y` is holomorphic. In this basis,
+
+        .. math::
+
+            \begin{aligned}
+            2\eta &= -\oint_a \frac{x\,dx}{4y}, \\
+            2\eta' &= -\oint_b \frac{x\,dx}{4y}.
+            \end{aligned}
+
+        These periods describe the changes of a second-kind integral around
+        cycles, analogous to the quasi-periods of Weierstrass zeta.
 
         Recognized hyperelliptic models use the automatic BEL basis and Baker
         marking. The general engine requires one callable per genus in
@@ -455,6 +504,27 @@ class Curve:
         unnormalized vector in :math:`\mathbb{C}^g`, defined modulo its period
         lattice.
 
+        For a base place :math:`Q` and an effective divisor
+        :math:`D=P_1+\cdots+P_n`, the components are
+
+        .. math::
+
+            u_i(D;Q)=\sum_{\ell=1}^{n}\int_Q^{P_\ell}du_i,
+            \qquad i=1,\ldots,g.
+
+        Changing the paths by cycles changes this vector by
+        :math:`2\omega m+2\omega'n`, with :math:`m,n\in\mathbb Z^g`.
+        For a single point on :math:`y^2=x^3-x`, this is the elliptic
+        integral
+
+        .. math::
+
+            u(P;Q)=\int_Q^P\frac{dx}{y}.
+
+        The returned coordinates use this differential basis. Normalized
+        Jacobian coordinates are :math:`(2\omega)^{-1}u`, with lattice
+        :math:`\mathbb Z^g+\tau\mathbb Z^g`.
+
         ``target`` is a single place (as ``(x, y)`` pair or ``CurvePlace``),
         a chart-backed place, or a sequence of places (effective divisor). An
         empty sequence returns the zero vector. Use ``differentials`` to override
@@ -495,6 +565,35 @@ class Curve:
 
         ``target`` and ``base_place`` have the same meanings as in :meth:`abel_map_kind_1`.
         Returns a ``CurveSecondKindAbelMap`` record with the second-kind ``value``.
+
+        For a second-kind basis :math:`dr_1,\ldots,dr_g`, a base place
+        :math:`Q`, and an effective divisor :math:`D=P_1+\cdots+P_n`,
+        the components are
+
+        .. math::
+
+            r_i(D;Q)=\sum_{\ell=1}^{n}\int_Q^{P_\ell}dr_i,
+            \qquad i=1,\ldots,g.
+
+        For :math:`y^2=x^3-x`, the automatic BEL form gives, along a path
+        between finite regular places avoiding its pole at infinity,
+
+        .. math::
+
+            r(P;Q)=\int_Q^P\frac{x\,dx}{4y}.
+
+        This is a meromorphic Abelian integral rather than a holomorphic
+        coordinate on the Jacobian. Adding cycles changes it by
+        :math:`-2\eta m-2\eta'n`, using the signs in
+        :meth:`periods_kind_2`. If first-kind reduction subtracts the cycle
+        periods indexed by :math:`m,n`, the corresponding values satisfy
+
+        .. math::
+
+            \begin{aligned}
+            u_{\mathrm{reduced}} &= u-2\omega m-2\omega'n, \\
+            r_{\mathrm{reduced}} &= r+2\eta m+2\eta'n.
+            \end{aligned}
 
         Hyperelliptic curves use automatic BEL basis construction. The geometric
         polygon engine requires explicit ``second_differentials``; to override
@@ -630,14 +729,19 @@ class Curve:
 
 
 def algebraic_curve(specification, *, ctx=None):
-    """Construct a curve with specialized hyperelliptic or general geometry.
+    r"""Construct a :class:`Curve` using an optional numerical context.
 
-    General curves use a common compact marking for first-kind general-curve
-    operations, with automatic or supplied holomorphic bases. Supplied
-    second-kind forms support periods and Abel maps, including convergent
-    chart tails. Divergent pole values are not regularized. Recognized
-    hyperelliptic models use the specialized Baker marking. Monodromy is a
-    radial diagnostic with its own base fibre.
+    ``specification`` describes the equation :math:`F(x,y)=0`. It accepts a
+    sparse mapping from ``(i, j)`` to the coefficient of :math:`x^i y^j`,
+    a sequence of ``(i, j, coefficient)`` terms, or an ascending coefficient
+    sequence ``(p0, p1, ..., pn)`` for :math:`y^2=P(x)`, where
+    :math:`P(x)=p_0+p_1 x+\cdots+p_n x^n`. The defining polynomial must
+    depend on :math:`y`.
+
+    With ``ctx=None``, the curve uses the standard ``mpmath.mp`` context.
+    Passing ``ctx`` selects a custom context. This convenience function
+    returns ``Curve(ctx, specification)`` after resolving the context;
+    both entry points create the same kind of object.
     """
     return Curve(resolve_context(ctx), specification)
 
