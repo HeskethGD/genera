@@ -1,8 +1,6 @@
 from pathlib import Path
 import sys
 
-from cycler import cycler
-
 sys.path.insert(0, str(Path(__file__).parent.parent / "docs_ext"))
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -58,8 +56,10 @@ plot_html_show_formats = False
 plot_html_show_source_link = False
 # Distinguish curves by pattern and shape, keeping all strokes dark teal.
 plot_rcparams = {
-    "axes.prop_cycle": cycler(color=["#015758"] * 4)
-        + cycler(linestyle=["-", "--", "-.", ":"]),
+    "axes.prop_cycle": (
+        "cycler(color=['#015758'] * 4)"
+        " + cycler(linestyle=['-', '--', '-.', ':'])"
+    ),
     "axes.facecolor": "white",
     "figure.facecolor": "white",
     "savefig.facecolor": "white",
