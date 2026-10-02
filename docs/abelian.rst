@@ -41,6 +41,10 @@ illustrated in `DLMF section 21.4 <https://dlmf.nist.gov/21.4>`_.
    ]
    fig, ax = plt.subplots()
    plot(curves, [-2, 2], axes=ax)
+   # mpmath supplies its own styles; distinguish slices without colour.
+   for line, style in zip(ax.lines, ("-", "--")):
+       line.set_color("#015758")
+       line.set_linestyle(style)
    ax.legend([r"$z=(x,x/2)$", r"$z=(x,2x)$"])
 
 .. plot::
@@ -53,7 +57,7 @@ illustrated in `DLMF section 21.4 <https://dlmf.nist.gov/21.4>`_.
    fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
    surface = lambda x, y: abs(rtheta([x, y], tau))
    splot(surface, [-1, 1], [-1, 1], points=35, keep_aspect=False,
-         axes=ax, plot3d_kwargs={"cmap": "viridis"})
+         axes=ax, plot3d_kwargs={"color": "#015758"})
    ax.set_zlabel(r"$|\theta(z\mid\tau)|$")
 
 .. autofunction:: genera.rtheta_jet
@@ -86,7 +90,10 @@ Riemann matrix ``tau``, and the symmetric matrix ``kappa``. The convention is
 
 .. math::
 
-   \tau=\omega^{-1}\omega',\qquad v=(2\omega)^{-1}u.
+   \begin{aligned}
+   \tau&=\omega^{-1}\omega',\\
+   v&=(2\omega)^{-1}u.
+   \end{aligned}
 
 The characteristic uses the same literal convention as :func:`genera.rtheta`.
 For compatible hyperelliptic curve data, the canonical normalization is
@@ -99,11 +106,6 @@ selected with ``normalization="hyperelliptic"``.
 .. autofunction:: genera.kleinian_zeta
 
 .. autofunction:: genera.kleinian_p
-
-The Baker--Akhiezer function remains available as an implementation-level
-function in ``genera.kleinian`` while its public top-level export is being
-stabilized. It is deliberately not part of the documented public API of this
-release.
 
 For the classical development of Abelian, theta, sigma, and multiply periodic
 functions, see [BEL1997]_, [CEEK2000]_, and [Onishi2005]_.

@@ -9,6 +9,8 @@ Run from the Genera repository root with
     .venv/bin/python -m examples.bernatska.bernatska_trigonal_demo
 """
 
+from dataclasses import dataclass
+
 from genera import Curve, kleinian_p
 from mpmath import mp
 
@@ -176,9 +178,21 @@ def paper_example_3b_values(omega, tau, kappa):
     return values, expected
 
 
-def main():
-    mp.dps = 20
+@dataclass
+class BernatskaValidation:
+    """Computed branch values, paper comparisons and enforced residuals."""
 
+    genus: int
+    intersection_rank: int
+    branch_values: tuple
+    cycle_change: object
+    residuals: dict
+    tau_eigenvalues: tuple
+    values_3a: tuple
+    values_3b: tuple
+
+
+def _compute_example(verbose=False):
     curve = Curve(mp, trigonal_curve())
     first_kind, second_kind = differentials()
     first_data = curve.periods_kind_1(first_kind)
@@ -246,27 +260,31 @@ def main():
         abs(value - expected)
         for value, expected in zip(p_values_3b, p_expected_3b))
 
-    print("finite branch permutations:", permutations[:-1])
-    print("infinity permutation:", permutations[-1])
-    print("genus / intersection rank:", homology.genus,
-          homology.intersection_rank)
-    print("cycle change to Bernatska's basis:")
-    print(cycle_change)
-    print("maximum distance to integer:", mp.nstr(integer_deviation, 8))
-    print("symplectic cycle residual:", mp.nstr(symplectic_residual, 8))
-    print("branch-point residual:", mp.nstr(branch_residual, 8))
-    print("first-kind period residual:", mp.nstr(first_residual, 8))
-    print("second-kind period residual:", mp.nstr(second_residual, 8))
-    print("tau symmetry residual:", mp.nstr(tau_symmetry, 8))
-    print("Im(tau) eigenvalues:",
-          [mp.nstr(value, 8) for value in eigenvalues])
-    print("kappa symmetry residual:", mp.nstr(kappa_symmetry, 8))
-    print("Example 3a maximum P-function residual:",
-          mp.nstr(p_residual, 8))
-    print("Example 3b maximum P-function residual:",
-          mp.nstr(p_residual_3b, 8))
+    if verbose:
+        print("finite branch permutations:", permutations[:-1])
+        print("infinity permutation:", permutations[-1])
+        print("genus / intersection rank:", homology.genus,
+              homology.intersection_rank)
+        print("cycle change to Bernatska's basis:")
+        print(cycle_change)
+        print("maximum distance to integer:", mp.nstr(integer_deviation, 8))
+        print("symplectic cycle residual:", mp.nstr(symplectic_residual, 8))
+        print("branch-point residual:", mp.nstr(branch_residual, 8))
+        print("first-kind period residual:", mp.nstr(first_residual, 8))
+        print("second-kind period residual:", mp.nstr(second_residual, 8))
+        print("tau symmetry residual:", mp.nstr(tau_symmetry, 8))
+        print("Im(tau) eigenvalues:",
+              [mp.nstr(value, 8) for value in eigenvalues])
+        print("kappa symmetry residual:", mp.nstr(kappa_symmetry, 8))
+        print("Example 3a maximum P-function residual:",
+              mp.nstr(p_residual, 8))
+        print("Example 3b maximum P-function residual:",
+              mp.nstr(p_residual_3b, 8))
 
-    if (branch_residual > mp.mpf("8e-6")
+    if (homology.genus != 3
+            or homology.intersection_rank != 6
+            or len(points) != 8
+            or branch_residual > mp.mpf("8e-6")
             or integer_deviation > mp.mpf("2e-6")
             or abs(mp.det(cycle_change)) != 1
             or symplectic_residual != 0
@@ -278,6 +296,54 @@ def main():
             or p_residual > mp.mpf("2e-3")
             or p_residual_3b > mp.mpf("2e-3")):
         raise RuntimeError("Bernatska trigonal validation failed")
+
+    return BernatskaValidation(
+        homology.genus, homology.intersection_rank, tuple(points), cycle_change,
+        {
+            "branch_points": branch_residual,
+            "integer_change": integer_deviation,
+            "symplectic_change": symplectic_residual,
+            "first_periods": first_residual,
+            "second_periods": second_residual,
+            "tau_symmetry": tau_symmetry,
+            "kappa_symmetry": kappa_symmetry,
+            "p_3a": p_residual,
+            "p_3b": p_residual_3b,
+        },
+        tuple(eigenvalues), tuple(p_values), tuple(p_values_3b),
+    )
+
+
+def documentation_example():
+    """Run the checked trigonal calculation at 20 decimal digits."""
+    with mp.workdps(20):
+        return _compute_example()
+
+
+def make_figure(result):
+    """Plot the computed finite branch locus; import Matplotlib on demand."""
+    import matplotlib.pyplot as plt
+    from examples._plotting import TEAL
+
+    points = sorted(result.branch_values, key=lambda z: (mp.re(z), mp.im(z)))
+    figure, ax = plt.subplots(figsize=(7, 5))
+    ax.axhline(0, color="0.85", linewidth=0.8)
+    ax.axvline(0, color="0.85", linewidth=0.8)
+    ax.plot([float(mp.re(z)) for z in points],
+            [float(mp.im(z)) for z in points], "o", color=TEAL)
+    ax.set_xlabel("Re(x)")
+    ax.set_ylabel("Im(x)")
+    ax.set_aspect("equal", adjustable="box")
+    ax.margins(0.15)
+    ax.set_title("Bernatska's trigonal curve: finite branch values")
+    figure.tight_layout()
+    return figure
+
+
+def main():
+    """Run the validation and print detailed standalone diagnostics."""
+    with mp.workdps(20):
+        return _compute_example(verbose=True)
 
 
 if __name__ == "__main__":

@@ -62,11 +62,12 @@ Run from the Genera repository root with
 """
 
 import argparse
+from dataclasses import dataclass
 
 from genera import algebraic_curve, kleinian_p
 from mpmath import mp
 
-from examples._rk4 import rk4_step
+from examples._rk4 import rk4_step, rk4_trajectory
 
 
 def multiply_by_linear(coefficients, root):
@@ -318,6 +319,98 @@ def compute_comparison(data, start, stop, steps, samples):
         if index < steps:
             state = rk4_step(ode_rhs, state, step, data)
     return rows
+
+
+@dataclass
+class DocumentationComparison:
+    """Genus-three trajectories and their enforced numerical checks."""
+
+    rk4_times: list
+    rk4_states: tuple
+    analytic_times: list
+    analytic_states: list
+    errors: tuple
+    numeric_spectral_error: object
+    analytic_spectral_error: object
+    kleinian_residuals: tuple
+    abel_residuals: tuple
+    rk4_error_ratio: object
+    rk4_refinement: object
+
+
+def documentation_example():
+    """Check one 30-digit phase over [-0.5, 0.5] using sparse P-evaluations.
+
+    The fine RK4 run uses 32,768 steps, saving 129 plotting samples.
+    Seventeen analytic states suffice for the comparison markers. A coarse
+    run uses half as many steps to verify fourth-order convergence.
+    """
+    with mp.workdps(30):
+        data = data_for_phase(problem_data(), mp.mpf("0.13"))
+        if data["curve"].genus != 3 or abs(data["coefficients"][6]) > mp.mpf("1e-24"):
+            raise RuntimeError("unexpected canonical Neumann-Moser curve")
+        identities = kleinian_residuals(data)
+        abel_residuals = abel_map_residuals(data)
+        if max((*identities, *abel_residuals)) > mp.mpf("1e-24"):
+            raise RuntimeError("Neumann-Moser Kleinian or Abel-map check failed")
+
+        rk4_times = [-mp.mpf("0.5") + mp.mpf(i) / 128 for i in range(129)]
+        sample_indices = list(range(0, 129, 8))
+        analytic_times = [rk4_times[i] for i in sample_indices]
+        analytic = [analytic_state(t, data) for t in analytic_times]
+        fine = rk4_trajectory(ode_rhs, analytic[0], rk4_times,
+                              substeps=256, args=(data,))
+        coarse = rk4_trajectory(ode_rhs, analytic[0], rk4_times,
+                                substeps=128, args=(data,))
+        errors = tuple(max(abs(exact[component] - fine[index][component])
+                           for index, exact in zip(sample_indices, analytic))
+                       for component in range(10))
+        coarse_error = max(abs(a - b)
+                           for index, exact in zip(sample_indices, analytic)
+                           for a, b in zip(exact, coarse[index]))
+        ratio = coarse_error / max(errors)
+        refinement = max(abs(a - b) for left, right in zip(fine, coarse)
+                         for a, b in zip(left, right))
+        analytic_spectral = max(spectral_error(state, data) for state in analytic)
+        numeric_spectral = max(spectral_error(state, data) for state in fine)
+        if analytic_spectral > mp.mpf("1e-24"):
+            raise RuntimeError("analytic Neumann-Moser spectral polynomial check failed")
+        if max((*errors, numeric_spectral)) > mp.mpf("1e-14"):
+            raise RuntimeError("Neumann-Moser solution failed its RK4 comparison")
+        if refinement > mp.mpf("1e-13") or not 8 < ratio < 32:
+            raise RuntimeError("Neumann-Moser RK4 step-refinement check failed")
+        return DocumentationComparison(
+            rk4_times, fine, analytic_times, analytic, errors,
+            numeric_spectral, analytic_spectral, identities, abel_residuals,
+            ratio, refinement,
+        )
+
+
+def make_figure(result):
+    """Plot the U, V and W coefficients, importing Matplotlib on demand."""
+    import matplotlib.pyplot as plt
+    from examples._plotting import comparison_styles
+
+    rk4_times = [float(t) for t in result.rk4_times]
+    analytic_times = [float(t) for t in result.analytic_times]
+    names = ("u1", "u2", "u3", "v1", "v2", "v3", "w1", "w2", "w3", "w4")
+    figure, axes = plt.subplots(3, 1, figsize=(8, 9), sharex=True)
+    for ax, indices, label in ((axes[0], range(3), "U coefficients"),
+                               (axes[1], range(3, 6), "V coefficients"),
+                               (axes[2], range(6, 10), "W coefficients")):
+        for style_index, index in enumerate(indices):
+            line_style, marker_style = comparison_styles(style_index)
+            ax.plot(rk4_times, [float(s[index]) for s in result.rk4_states],
+                            **line_style, label=names[index] + " (RK4)")
+            ax.plot(analytic_times, [float(s[index]) for s in result.analytic_states],
+                    **marker_style,
+                    label=names[index] + " (Kleinian)")
+        ax.set_ylabel(label)
+        ax.legend(fontsize=8, ncol=len(indices), loc="lower center",
+                  bbox_to_anchor=(0.5, 1.02))
+    axes[2].set_xlabel("Time t")
+    figure.tight_layout()
+    return figure
 
 
 def parse_arguments():

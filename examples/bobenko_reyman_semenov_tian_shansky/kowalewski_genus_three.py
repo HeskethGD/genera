@@ -2,6 +2,7 @@
 """Check the genus-three Kowalewski formula of Bobenko et al."""
 
 import argparse
+from dataclasses import dataclass
 
 from genera import rtheta, rtheta_jet
 from mpmath import mp
@@ -196,6 +197,113 @@ def identity_760_ratio(time, p1, p2):
     return ((a_value * d_value + b_value * c_value)
             / (rtheta(phase, tau)
                * rtheta(phase, tau, epsilon)))
+
+
+@dataclass
+class DocumentationComparison:
+    """Checked sparse theta solution and dense independent RK4 trajectory."""
+
+    rk4_times: tuple
+    rk4_states: tuple
+    analytic_times: tuple
+    analytic_states: tuple
+    errors: tuple
+    imaginary: object
+    analytic_invariant_drift: object
+    numeric_invariant_drift: object
+    decomposition_errors: tuple
+    identity_error: object
+    rk4_refinement: object
+    rk4_refinement_ratio: object
+
+
+def documentation_example():
+    """Check the rounded genus-three fixture at 30-digit working precision.
+
+    Save 257 RK4 states on [0, 2], evaluating theta at only 17 times.
+    Three independent RK4 grids separate step convergence from fixture error.
+    """
+    with mp.workdps(30):
+        p1 = mp.mpc("-0.86020578672750655767", "0.37129178949707584365")
+        p2 = mp.mpc("-0.82333617811367142382", "0.1887005817208524906")
+        times = tuple(mp.mpf(i) / 128 for i in range(257))
+        indices = tuple(range(0, 257, 16))
+        analytic_times = tuple(times[i] for i in indices)
+        analytic = tuple(tuple(ell) + tuple(gravity)
+                         for ell, gravity in
+                         (solution(t, p1, p2) for t in analytic_times))
+        fine = rk4_trajectory(euler_poisson_rhs, analytic[0], times, substeps=32)
+        middle = rk4_trajectory(euler_poisson_rhs, analytic[0], times, substeps=16)
+        coarse = rk4_trajectory(euler_poisson_rhs, analytic[0], times, substeps=8)
+
+        def distance(left, right):
+            return max(abs(a - b) for s, t in zip(left, right)
+                       for a, b in zip(s, t))
+
+        refinement = distance(fine, middle)
+        ratio = distance(middle, coarse) / refinement
+        errors = tuple(max(abs(state[j] - fine[i][j])
+                           for i, state in zip(indices, analytic))
+                       for j in range(6))
+        imaginary = max(abs(mp.im(value)) for state in analytic for value in state)
+        initial_integrals = invariants(analytic[0][:3], analytic[0][3:])
+
+        def invariant_drift(states):
+            return max(abs(value - reference) for state in states
+                       for value, reference in zip(
+                           invariants(state[:3], state[3:]), initial_integrals))
+
+        analytic_drift = invariant_drift(analytic)
+        numeric_drift = invariant_drift(fine)
+        phases = ((mp.mpc("0.13", "0.07"), mp.mpc("-0.09", "0.04")),
+                  (mp.mpc("0.21", "-0.03"), mp.mpc("0.08", "0.11")))
+        decomposition = tuple(error for a, b in phases
+                              for error in decomposition_residuals(a, b))
+        ratios = tuple(identity_760_ratio(t, a, b) for a, b in phases
+                       for t in (0, mp.mpf("0.17")))
+        identity_error = max(abs(value - ratios[0]) / max(1, abs(ratios[0]))
+                             for value in ratios)
+        if max(decomposition) > mp.mpf("1e-12"):
+            raise RuntimeError("Bobenko theta decomposition check failed")
+        if max((*errors, imaginary, analytic_drift, identity_error,
+                abs(initial_integrals[0] - 1))) > mp.mpf("1e-10"):
+            raise RuntimeError("Bobenko rounded-data validation failed")
+        if (numeric_drift > mp.mpf("1e-12")
+                or refinement > mp.mpf("1e-12") or not 8 < ratio < 32):
+            raise RuntimeError("Bobenko RK4 refinement check failed")
+        return DocumentationComparison(
+            times, fine, analytic_times, analytic, errors, imaginary,
+            analytic_drift, numeric_drift, decomposition, identity_error,
+            refinement, ratio,
+        )
+
+
+def make_figure(result):
+    """Plot angular momentum and gravity; import Matplotlib only on demand."""
+    import matplotlib.pyplot as plt
+    from examples._plotting import comparison_styles
+
+    figure, axes = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
+    for ax, indices, label, symbol in (
+            (axes[0], range(3), "Angular momentum", r"\ell"),
+            (axes[1], range(3, 6), "Gravity direction", "g")):
+        for style_index, j in enumerate(indices):
+            line_style, marker_style = comparison_styles(style_index)
+            name = rf"${symbol}_{j % 3 + 1}$"
+            ax.plot([float(t) for t in result.rk4_times],
+                            [float(mp.re(s[j])) for s in result.rk4_states],
+                            **line_style, label=name + " (RK4)")
+            ax.plot([float(t) for t in result.analytic_times],
+                    [float(mp.re(s[j])) for s in result.analytic_states],
+                    **marker_style,
+                    label=name + " (theta)")
+        ax.set_ylabel(label)
+        ax.legend(fontsize=8, ncol=3, loc="lower center",
+                  bbox_to_anchor=(0.5, 1.02))
+    axes[1].set_xlabel("Time t")
+    figure.suptitle("Bobenko–Reyman–Semenov-Tian-Shansky genus-three top")
+    figure.tight_layout()
+    return figure
 
 
 def parse_arguments():
