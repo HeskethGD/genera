@@ -8,18 +8,12 @@ used with the higher-genus theta and Kleinian functions documented in
 :doc:`abelian`.
 
 The module extends the genus-1 elliptic computations available in mpmath.
-An elliptic curve's normalized period lattice is described by one complex
-ratio :math:`\tau`; in genus :math:`g`, it is described by a
+While a genus 1 elliptic curve's normalized period lattice is described by one complex
+ratio :math:`\tau`, in genus :math:`g`, it is described by a
 :math:`g\times g` Riemann matrix. A genus-:math:`g` curve has :math:`g`
 linearly independent holomorphic differentials. Their periods determine a
 :math:`g`-dimensional complex torus, the Jacobian.
 
-For a genus-1 model :math:`y^2=P(x)`, where :math:`P` is a polynomial, an Abel
-map integrates a differential such as :math:`dx/y` to give a complex number
-modulo its periods. In genus :math:`g`, it integrates :math:`g` differentials
-to give a vector in :math:`\mathbb{C}^g` modulo a period lattice. The
-normalized matrix :math:`\tau` generalizes the elliptic period ratio;
-unnormalized periods also depend on the chosen differential basis.
 
 Conventions
 ...........
@@ -62,10 +56,10 @@ the coordinate conventions needed when using their results together.
      - Return value
      - Coordinates
    * - ``periods_kind_1``
-     - ``CurveFirstKindPeriods``
+     - ``CurvePeriodsKind1``
      - Half-periods and normalized ``tau``
    * - ``periods_kind_2``
-     - ``CurveSecondKindPeriods``
+     - ``CurvePeriodsKind2``
      - ``eta``, ``eta_prime``, and ``kappa``
    * - ``riemann_matrix``
      - Matrix
@@ -74,10 +68,10 @@ the coordinate conventions needed when using their results together.
      - ``CurveRiemannConstant``
      - Normalized Jacobian coordinates
    * - ``abel_map_kind_1``
-     - Column matrix
+     - ``CurveAbelMapKind1``
      - Selected first-kind basis, lattice ``[2*omega, 2*omega_prime]``
    * - ``abel_map_kind_2``
-     - ``CurveSecondKindAbelMap``
+     - ``CurveAbelMapKind2``
      - Compatible second-kind integrals
    * - ``integral`` / ``chart_integral``
      - ``CurveIntegral``
@@ -86,74 +80,127 @@ the coordinate conventions needed when using their results together.
      - ``CurveLatticeReduction``
      - Original basis for a period record; normalized basis for ``tau``
 
+.. _numerical-contexts:
+.. _curve-class:
+
 The Curve class
 ...............
 
 ``Curve`` is the unifying object for topology, periods, integration, and Abel
-maps, bound to an mpmath numerical context. Genera selects a specialized
-hyperelliptic engine for recognized models and a geometric polygon engine
-for other supported smooth plane curves or calculations with supplied
-differentials. The next section describes these choices.
+maps on a plane algebraic curve.
 
-Use ``algebraic_curve(specification)`` to construct a curve with the standard
-``mpmath.mp`` context. The optional ``ctx`` argument selects a custom context;
-the direct constructor ``Curve(ctx, specification)`` requires one explicitly.
-The function is a convenience wrapper around that constructor, and both
-return a ``Curve`` with the same methods.
+.. autoclass:: genera.Curve
+   :no-index:
 
-The input ``specification`` describes a polynomial equation :math:`F(x,y)=0`.
-A sparse mapping assigns the coefficient of :math:`x^i y^j` to each key
-``(i, j)``; a sequence of ``(i, j, coefficient)`` terms is also accepted.
-For a hyperelliptic equation :math:`y^2=P(x)`, an ascending sequence
-``(p0, p1, ..., pn)`` defines the polynomial
-:math:`P(x)=p_0+p_1x+\cdots+p_nx^n`.
+Computational engines for supported curves
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For example, the elliptic curve
+Hyperelliptic engine
+^^^^^^^^^^^^^^^^^^^^
+
+This engine handles equations quadratic in :math:`y` with a constant,
+nonzero leading coefficient. Completing the square gives a hyperelliptic model:
 
 .. math::
 
-   y^2=x^3-x
+   \begin{aligned}
+   A y^2+B(x)y+C(x) &= 0, \\
+   z &= y+\frac{B(x)}{2A}, \\
+   z^2 &= P(x).
+   \end{aligned}
 
-has defining polynomial :math:`F(x,y)=y^2+x-x^3`. Its sparse specification is::
+The polynomial :math:`P` has distinct roots. First- and second-kind bases are
+constructed automatically in Baker marking, making this the simplest API to
+use. Its specialized calculations are generally faster than the geometric
+engine. Hyperelliptic curves also arise in many important integrable systems,
+including the :doc:`Neumann–Moser <examples/neumann_moser>` and
+:doc:`Manakov <examples/manakov>` systems. The
+:doc:`Ônishi example <examples/onishi>` uses this engine for genus-two
+periods and Abel maps.
 
-   >>> from genera import algebraic_curve
-   >>> curve = algebraic_curve({(0, 2): 1, (1, 0): 1, (3, 0): -1})
-   >>> curve.genus
-   1
+Geometric polygon engine
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-The equivalent ascending coefficient specification is ``(0, -1, 0, 1)``.
-The polynomial must depend on :math:`y`; a polynomial independent of :math:`y`
-is rejected. Expensive stages are lazy and cached by precision. If the
-numerical context changes after construction, the curve warns and relevant
-stages are recomputed. Increasing the working precision cannot recover digits
-already lost from inexact input coefficients.
+The geometric engine computes topology, first-kind periods, Riemann constants,
+and Abel maps for supported plane curves. It constructs a holomorphic basis
+from the sparse polynomial for irreducible models **nondegenerate with respect
+to their Newton polygon**.
 
-.. autofunction:: genera.algebraic_curve
+The Newton polygon is the convex hull of exponent pairs with nonzero
+coefficients. Nondegeneracy means that the polynomial and each edge polynomial
+(the terms along an edge) have no singular zeros with :math:`x,y\ne0`.
+Interior lattice points :math:`(a,b)` give the genus and first-kind basis:
 
-.. autoclass:: genera.Curve
+.. math::
 
-Computational engines
-.....................
+   \begin{aligned}
+   du_{a,b} &= \frac{x^{a-1}y^{b-1}}{F_y(x,y)}\,dx, \\
+   F_y &= \frac{\partial F}{\partial y}.
+   \end{aligned}
 
-The hyperelliptic engine handles curves of the form
-:math:`A y^2+B(x)y+C(x)=0` with constant nonzero :math:`A`, provided the
-transformed polynomial has distinct roots. The change
-:math:`z=y+B(x)/(2A)` gives
-:math:`z^2=B(x)^2/(4A^2)-C(x)/A`. Its automatic forms are
-:math:`x^k dx/z` for :math:`k=0,\ldots,g-1`, and it uses Baker marking
-with deterministic paths between branch values.
+For example, :math:`y^3=1-x^4` has genus three. Its first-kind periods are
+computed without supplying differential callables::
 
-The geometric polygon engine handles non-hyperelliptic curves and calculations
-with caller-supplied differentials. Without supplied forms it can select
-:math:`x^{a-1}y^{b-1}dx/F_y` from interior Newton-polygon points. Supplying
-one holomorphic differential callable :math:`f(x,y)` per genus, giving the
-coefficient of :math:`dx`, selects this engine even for a hyperelliptic model.
-Numerical checks cannot certify that supplied forms have no poles; the caller
-must check their behaviour on the curve.
+   >>> from genera import Curve
+   >>> from mpmath import mp
+   >>> mp.dps = 20
+   >>> curve = Curve(polynomial={(0, 3): 1, (4, 0): 1, (0, 0): -1})
+   >>> first = curve.periods_kind_1()
+   >>> first.genus, first.marking
+   (3, 'geometric-polygon')
+   >>> curve.validate(first).passed
+   True
 
-The ``engine`` and ``marking`` fields on period records identify the convention
-used. Results from different markings must not be combined without an
-integral symplectic cycle transformation.
+**Second-kind construction is not automatic in this engine.**
+``periods_kind_2()`` and ``abel_map_kind_2()`` require compatible forms bound
+through ``differentials_kind_2``. Without them, these methods raise an error.
+First-kind calculations do not require them.
+
+.. _custom-differential-bases:
+
+Custom differential bases (advanced)
+""""""""""""""""""""""""""""""""""""
+
+Custom bases are available when required. A first-kind basis contains
+:math:`g` linearly independent holomorphic forms; second-kind forms are
+meromorphic with zero residues at every pole. Each form is represented by a
+callable ``f(x, y)`` returning the coefficient in :math:`f(x,y)\,dx`.
+The :ref:`Bernatska example <bernatska-custom-bases>` demonstrates explicit
+first- and second-kind bases on a genus-three trigonal curve.
+
+The forms are bound once at construction. Supplying either basis selects
+geometric-polygon marking for all relevant methods, including homology, even
+on a hyperelliptic model. For example, the elliptic forms
+
+.. math::
+
+   \begin{aligned}
+   du &= \frac{dx}{y}, \\
+   dr &= \frac{x\,dx}{4y}
+   \end{aligned}
+
+can be bound as follows::
+
+   >>> first_kind = (lambda x, y: 1 / y,)
+   >>> second_kind = (lambda x, y: x / (4 * y),)
+   >>> curve = Curve(
+   ...     polynomial={(0, 2): 1, (1, 0): 1, (3, 0): -1},
+   ...     differentials_kind_1=first_kind,
+   ...     differentials_kind_2=second_kind,
+   ... )
+   >>> first = curve.periods_kind_1()
+   >>> second = curve.periods_kind_2()
+   >>> first.marking == second.marking == "geometric-polygon"
+   True
+
+Form order and scale determine the Abel coordinates and period rows;
+compatible data uses the same bases, marking, and base place. Zero residues
+alone do not fix the second-kind convention for Kleinian functions: the
+chosen forms must also give the intended ``kappa``.
+
+Holomorphicity and zero residues concern the compact curve, including
+infinity; numerical integration cannot certify them for arbitrary callables.
+The integration paths must also avoid nonintegrable poles.
 
 Topology
 ........
@@ -161,6 +208,9 @@ Topology
 The branch locus and monodromy describe the curve as sheets over the
 :math:`x`-line. The genus counts its handles, and homology supplies the
 :math:`2g` cycles used for periods and Abel maps.
+The :doc:`Bernatska example <examples/bernatska>` computes the branch locus,
+monodromy and homology of a genus-three trigonal curve and compares cycle
+markings.
 
 .. autoattribute:: genera.Curve.branch_locus
 
@@ -172,11 +222,9 @@ The branch locus and monodromy describe the curve as sheets over the
 
 .. autoattribute:: genera.Curve.homology
 
-The ``homology`` property describes the default marking. Custom differentials
-select the geometric polygon marking for that calculation, even on a curve
-whose default is Baker marking. Check the result's ``engine`` and ``marking``
-before combining periods or Abel coordinates; Abel values also need a common
-base place.
+The ``homology`` property uses the same marking selected by the bound bases
+as the period and Abel-map methods. Abel values and Riemann constants also
+need a common base place when used together.
 
 Periods and Riemann data
 ........................................
@@ -193,6 +241,10 @@ half-period :math:`(1+\tau)/2`, locating a theta zero. In higher genus, it
 shifts the theta-zero set to Abel images of effective divisors of degree
 :math:`g-1`.
 
+The :ref:`Manakov period construction <manakov-period-data>` combines
+``periods_kind_1()``, ``periods_kind_2()`` and ``riemann_constant()`` into
+compatible inputs for Kleinian functions.
+
 .. automethod:: genera.Curve.periods_kind_1
 
 .. automethod:: genera.Curve.periods_kind_2
@@ -205,7 +257,8 @@ shifts the theta-zero set to Abel images of effective divisors of degree
 returns ``eta``, ``eta_prime``, and ``kappa``, computing any first-kind data
 needed internally. The hyperelliptic engine constructs its second-kind basis
 automatically; the geometric polygon engine requires explicit
-``second_differentials``.
+``Curve(differentials_kind_2=...)``. The two period methods use the bases
+bound at construction and take no basis arguments.
 
 Places, paths, and integration
 ...............................
@@ -214,20 +267,50 @@ Places over a regular finite value are labelled by ``fibre``. A ``CurvePath``
 tracks a lifted path and can be passed to ``integral`` with one differential or
 a sequence of differentials.
 
-In genus 1, a path between two points determines an elliptic integral. Here,
-``integral`` can integrate several supplied forms along the same lifted path.
-It returns a scalar for one callable or a tuple for a sequence; that sequence
-need not contain exactly :math:`g` forms.
-
 .. automethod:: genera.Curve.fibre
 
 .. automethod:: genera.Curve.path
 
 .. automethod:: genera.Curve.integral
 
+Integrating individual forms
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``integral`` and ``chart_integral`` integrate the supplied forms along an
+explicit path. They do not require a genus-sized holomorphic basis. A single
+callable produces a scalar; a sequence produces a tuple of values::
+
+   >>> from genera import Curve
+   >>> from mpmath import mp
+   >>> mp.dps = 20
+   >>> curve = Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1})
+   >>> du = lambda x, y: 1 / y
+   >>> base = (mp.mpf(2), mp.sqrt(6))
+   >>> target = (mp.mpf(3), mp.sqrt(24))
+   >>> image = curve.abel_map_kind_1(target, base_place=base)
+   >>> path = curve.path(base, target)
+   >>> integral = curve.integral(du, path)
+   >>> mp.almosteq(integral.values, image.value[0])
+   True
+
+``abel_map_kind_1`` gives a genus-sized Abel vector of a point or divisor;
+``integral`` evaluates forms along a chosen path. In either
+case the integrals must converge. In particular, second-kind poles cannot
+be used as ordinary endpoints without a regularization procedure, which
+these methods do not provide.
+
+The :ref:`Bobenko residue calculation <bobenko-flow-residues>` uses
+``chart_integral()`` on a closed local loop to obtain the flow velocity.
+
+Local charts
+~~~~~~~~~~~~
+
 Local charts provide a parameter and branch choice for ramification points and
 places at infinity. They are useful when an affine endpoint does not uniquely
 identify a place.
+The :ref:`Bobenko marked-place calculation <bobenko-marked-places>` combines
+``chart()``, ``monomial_chart()``, ``chart_fibre()`` and ``chart_place()``
+to represent places above zero and infinity for Abel integration.
 
 .. automethod:: genera.Curve.chart
 
@@ -244,17 +327,30 @@ Abel maps and lattice reduction
 
 The Abel map integrates a holomorphic basis from a base place to a point,
 and adds these vectors for a divisor. Its :math:`g` components generalize the
-single elliptic integral in genus 1. ``abel_map_kind_1`` returns coordinates
-in the selected differential basis, with period lattice generated by
+single elliptic integral in genus 1. ``abel_map_kind_1`` returns a
+``CurveAbelMapKind1`` record whose ``value`` contains coordinates in the
+selected differential basis, with period lattice generated by
 ``[2*omega, 2*omega_prime]``. ``lattice_reduce`` reduces a vector modulo that
 lattice, analogous to reducing an elliptic integral modulo its periods. When
 given ``tau`` instead of a period record, it uses normalized coordinates
 and the lattice ``[I, tau]``.
 
+The :ref:`Neumann–Moser initial-value example <neumann-moser-initial-conditions>`
+uses ``abel_map_kind_1()`` to recover the phase from physical initial
+coefficients. The :doc:`original Kovalevskaya example <examples/kovalevskaya_original>`
+uses ``lattice_reduce()`` to continue Abel coordinates across period jumps.
+
 The default base place is infinity for odd-degree hyperelliptic models, the
 first ordered finite branch point for even-degree models, or sheet zero over
-the computational base point for the geometric polygon engine. Use
-``base_place`` to choose another starting place.
+the computational base point for the geometric polygon engine.
+``base_place`` selects another starting place.
+
+Both Abel-map records include ``engine`` and ``marking``. With ``reduce=True``,
+``reduction_shift`` gives the integer cycle coefficients subtracted from the
+first-kind value; with reduction disabled it is ``None``. For first-kind
+period matrices, the unreduced value is reconstructed by adding
+``2*omega*m + 2*omega_prime*n`` to the reduced value. Second-kind integrals
+use the corresponding sign convention described below.
 
 .. automethod:: genera.Curve.abel_map_kind_1
 
@@ -271,8 +367,9 @@ Validation and result records
 .. automethod:: genera.Curve.validate
 
 The record classes ``CurveBranchLocus``, ``CurveMonodromy``, ``CurveGenus``,
-``CurveHomology``, ``CurveFirstKindPeriods``, ``CurveSecondKindPeriods``,
-``CurveRiemannConstant``, ``CurveSecondKindAbelMap``, ``CurveChart``,
+``CurveHomology``, ``CurvePeriodsKind1``, ``CurvePeriodsKind2``,
+``CurveRiemannConstant``, ``CurveAbelMapKind1``, ``CurveAbelMapKind2``,
+``CurveChart``,
 ``CurvePlace``, ``CurvePath``, ``CurveIntegral``, ``CurveLatticeReduction``,
 ``CurveCheck`` and ``CurveValidation`` are importable from ``genera``.
 Record fields cannot be reassigned, but contained matrices are mutable.

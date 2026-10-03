@@ -121,7 +121,7 @@ def _stage_geometric_custom_periods_working(ctx, key):
     cover = _stage_geometric_cover(ctx, curve)
     graph, polygon = _stage_geometric_polygon(ctx, curve)
     if not graph.genus or len(forms) != graph.genus:
-        raise ValueError("differentials must contain one form per positive genus")
+        raise ValueError("differentials_kind_1 must contain one form per positive genus")
     columns, residual = _integrate_geometric_callable_chains(
         ctx, curve, polygon.chains, forms, cover.geometry.branch_values)
     return _GeometricPeriodData(
@@ -227,7 +227,7 @@ def _geometric_abel_divisor(ctx, curve, places, base_place=None, forms=None,
                           for i in range(data.genus))
 
         if second_forms and len(second_forms) != data.genus:
-            raise ValueError("second_differentials must contain one form per genus")
+            raise ValueError("differentials_kind_2 must contain one form per genus")
         forms = forms + tuple(second_forms)
         rules, edges = {}, {}
 

@@ -66,7 +66,7 @@ Stages (--stage): rk4, curve, abel, theta, demo, all.
 import argparse
 from dataclasses import dataclass
 
-from genera import algebraic_curve, rtheta
+from genera import Curve, rtheta
 from mpmath import mp
 
 from examples._rk4 import rk4_trajectory as integrate_rk4
@@ -331,7 +331,7 @@ def stage_rk4(verbose=True):
 def stage_curve(verbose=True):
     """Build the genus-two curve and report its period data."""
     mp.dps = 30
-    curve = algebraic_curve(curve_coefficients())
+    curve = Curve({(0, 2): 1, **{(i, 0): -c for i, c in enumerate(curve_coefficients())}})
     first = curve.periods_kind_1()
     if verbose:
         print("curve: y^2 = -4 (s-e1)(s-e2)(s-e3)(s-k1)(s-k2)")
@@ -374,7 +374,7 @@ def continuous_abel(curve, periods, states, verbose=False):
     continuous, so increments larger than a half-period are reduced
     modulo the period lattice before being accumulated.
     """
-    raw = [curve.abel_map_kind_1(divisor_places(state)) for state in states]
+    raw = [curve.abel_map_kind_1(divisor_places(state)).value for state in states]
     values = [raw[0]]
     for i in range(1, len(raw)):
         step = raw[i] - raw[i - 1]
@@ -571,7 +571,7 @@ def branch_characteristic(curve, periods, branch):
                 2 * periods.omega[row, column])
             basis[2 + row, 2 + column] = mp.im(
                 2 * periods.omega_prime[row, column])
-    image = curve.abel_map_kind_1((branch, mp.zero))
+    image = curve.abel_map_kind_1((branch, mp.zero)).value
     target = mp.matrix([
         mp.re(image[0]), mp.re(image[1]),
         mp.im(image[0]), mp.im(image[1]),

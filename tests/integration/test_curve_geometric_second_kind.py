@@ -1,6 +1,6 @@
 """Second-kind conventions and finite endpoints on the geometric marking."""
 
-from tests._support import make_curve
+from tests._support import make_curve, with_basis
 import pytest
 from mpmath import mp
 from genera.curves import _operations
@@ -24,7 +24,7 @@ def test_geometric_exact_second_kind_integrals_and_failures(monkeypatch):
     monkeypatch.setattr(_operations, '_stage_monodromy', radial_forbidden)
     # Exact meromorphic differentials d(x), d(x^2), d(x^3), poles only at infinity.
     forms = (lambda x, y: 1, lambda x, y: 2*x, lambda x, y: 3*x*x)
-    periods = curve.periods_kind_2(second_differentials=forms)
+    periods = with_basis(curve, differentials_kind_2=forms).periods_kind_2()
     assert periods.marking == 'geometric-polygon'
     assert ctx.norm(periods.eta)+ctx.norm(periods.eta_prime) < ctx.mpf('1e-16')
     assert curve.validate(periods).passed
@@ -32,24 +32,24 @@ def test_geometric_exact_second_kind_integrals_and_failures(monkeypatch):
     assert first.marking == periods.marking
     target = curve.fibre(ctx.mpc('.3', '.7'))[0]
     base = curve.fibre(ctx.mpc('.4', '.8'))[-1]
-    result = curve.abel_map_kind_2(target, second_differentials=forms, base_place=base)
+    result = with_basis(curve, differentials_kind_2=forms).abel_map_kind_2(target, base_place=base)
     expected = ctx.matrix([target.x**i-base.x**i for i in (1, 2, 3)])
     assert ctx.norm(result.value-expected) < ctx.mpf('1e-16')
-    assert ctx.norm(curve.abel_map_kind_2([], second_differentials=forms).value) == 0
-    reduced = curve.abel_map_kind_2(target, second_differentials=forms, base_place=base, reduce=True)
-    shift = curve.lattice_reduce(curve.abel_map_kind_1(target, base_place=base), first).shift
+    assert ctx.norm(with_basis(curve, differentials_kind_2=forms).abel_map_kind_2([]).value) == 0
+    reduced = with_basis(curve, differentials_kind_2=forms).abel_map_kind_2(target, base_place=base, reduce=True)
+    shift = curve.lattice_reduce(curve.abel_map_kind_1(target, base_place=base).value, first).shift
     assert reduced.reduction_shift == shift
     assert ctx.norm(reduced.value-expected) < ctx.mpf('1e-16')
     with pytest.raises(ValueError, match='one form per genus'):
-        curve.periods_kind_2(second_differentials=forms[:1])
+        with_basis(curve, differentials_kind_2=forms[:1]).periods_kind_2()
     with pytest.raises(ValueError, match='one form per genus'):
-        curve.abel_map_kind_2(target, second_differentials=forms[:1])
+        with_basis(curve, differentials_kind_2=forms[:1]).abel_map_kind_2(target)
     chart = curve.monomial_chart(-3, -4)
     infinity = curve.chart_place(chart, 1, ctx.mpf('.3'))
     with pytest.raises(ctx.NoConvergence, match='endpoint may be a pole'):
-        curve.abel_map_kind_2(infinity, second_differentials=forms)
+        with_basis(curve, differentials_kind_2=forms).abel_map_kind_2(infinity)
     with pytest.raises(ctx.NoConvergence, match='endpoint may be a pole'):
-        curve.abel_map_kind_2(target, second_differentials=forms, base_place=infinity)
+        with_basis(curve, differentials_kind_2=forms).abel_map_kind_2(target, base_place=infinity)
 
 
 def test_geometric_second_kind_periods_precision_and_shared_reduction():
@@ -60,11 +60,11 @@ def test_geometric_second_kind_periods_precision_and_shared_reduction():
     forms = (lambda x, y: x*x/(3*y*y), lambda x, y: x/(3*y),
              lambda x, y: x**3/(3*y*y))
     pnew = geometric.periods_kind_1()
-    snew = geometric.periods_kind_2(second_differentials=forms)
+    snew = with_basis(geometric, differentials_kind_2=forms).periods_kind_2()
     with ctx.workdps(25):
         reference = make_curve(ctx, TERMS)
         pold = reference.periods_kind_1()
-        sold = reference.periods_kind_2(second_differentials=forms)
+        sold = with_basis(reference, differentials_kind_2=forms).periods_kind_2()
     new = full(ctx, 2*pnew.omega, 2*pnew.omega_prime)
     old = full(ctx, 2*pold.omega, 2*pold.omega_prime)
 
@@ -85,10 +85,9 @@ def test_geometric_second_kind_periods_precision_and_shared_reduction():
     assert ctx.norm(snew.kappa-(raw_kappa+raw_kappa.T)/2) < ctx.mpf('1e-16')
     target = geometric.fibre(ctx.mpc('.3', '.7'))[0]
     base = geometric.fibre(ctx.mpc('.4', '.8'))[-1]
-    first = geometric.abel_map_kind_1([target]*3, base_place=base)
-    value = geometric.abel_map_kind_2([target]*3, second_differentials=forms, base_place=base)
-    reduced = geometric.abel_map_kind_2([target]*3, second_differentials=forms,
-                                            base_place=base, reduce=True)
+    first = geometric.abel_map_kind_1([target]*3, base_place=base).value
+    value = with_basis(geometric, differentials_kind_2=forms).abel_map_kind_2([target]*3, base_place=base)
+    reduced = with_basis(geometric, differentials_kind_2=forms).abel_map_kind_2([target]*3, base_place=base, reduce=True)
     shift = geometric.lattice_reduce(first, pnew).shift
     assert any(shift)
     assert reduced.reduction_shift == shift
@@ -116,7 +115,7 @@ def test_second_kind_regular_chart_endpoints_match_exact_and_higher_precision():
         values = []
         for cutoff in ('.3', '.25'):
             place = curve.chart_place(chart, seed, ctx.mpf(cutoff))
-            value = curve.abel_map_kind_2(place, second_differentials=forms, base_place=base)
+            value = with_basis(curve, differentials_kind_2=forms).abel_map_kind_2(place, base_place=base)
             expected = ctx.matrix([(0 if endpoint_x is None else (endpoint_x-offset)**k)-(base.x-offset)**k
                                    for k in powers])
             assert ctx.norm(value.value-expected) < ctx.mpf('1e-14')
@@ -127,19 +126,15 @@ def test_second_kind_regular_chart_endpoints_match_exact_and_higher_precision():
             # precision; the finite branch already has an exact primitive.
             with ctx.workdps(25):
                 reference = make_curve(ctx, terms)
-                reference_chart = reference.chart(chart.curve.terms, chart.coordinate_map)
+                reference_chart = reference.chart({(i, j): c for i, j, c in chart.curve.terms}, chart.coordinate_map)
                 reference_place = reference.chart_place(
                     reference_chart, ctx.one, ctx.mpf('.25'))
-                old = reference.abel_map_kind_2(
-                    reference_place, second_differentials=forms, base_place=base)
+                old = with_basis(reference, differentials_kind_2=forms).abel_map_kind_2(reference_place, base_place=base)
                 assert ctx.norm(old.value-values[-1]) < ctx.mpf('1e-16')
-            reduced = curve.abel_map_kind_2(
-                place, second_differentials=forms,
-                base_place=base, reduce=True)
+            reduced = with_basis(curve, differentials_kind_2=forms).abel_map_kind_2(place, base_place=base, reduce=True)
             assert ctx.norm(reduced.value-values[-1]) < ctx.mpf('1e-14')
             assert reduced.reduction_shift == curve.lattice_reduce(
-                curve.abel_map_kind_1(place, base_place=base), curve.periods_kind_1()).shift
+                curve.abel_map_kind_1(place, base_place=base).value, curve.periods_kind_1()).shift
         else:
-            reverse = curve.abel_map_kind_2(
-                base, second_differentials=forms, base_place=place)
+            reverse = with_basis(curve, differentials_kind_2=forms).abel_map_kind_2(base, base_place=place)
             assert ctx.norm(reverse.value+values[-1]) < ctx.mpf('1e-14')

@@ -54,7 +54,7 @@ from fractions import Fraction
 from itertools import permutations
 from math import factorial
 
-from genera import algebraic_curve, kleinian_sigma, kleinian_sigma_jet
+from genera import Curve, kleinian_sigma, kleinian_sigma_jet
 from mpmath import mp
 
 
@@ -596,7 +596,7 @@ def documentation_example():
     with mp.workdps(30):
         genus = 2
         coefficients = curve_coefficients(genus)
-        curve = algebraic_curve(coefficients)
+        curve = Curve({(0, 2): 1, **{(i, 0): -c for i, c in enumerate(coefficients)}})
         if curve.genus != genus:
             raise RuntimeError("unexpected Onishi curve genus")
         first = curve.periods_kind_1()
@@ -613,7 +613,7 @@ def documentation_example():
 
         def image_of(point):
             x, y = point
-            return curve.abel_map_kind_1((x, 2 * y))
+            return curve.abel_map_kind_1((x, 2 * y)).value
 
         points = [point_at(mp.mpf(x)) for x in (4, 5, 6)]
         images = [image_of(point) for point in points]
@@ -719,7 +719,7 @@ def main():
     mp.dps = arguments.dps
     genus = arguments.genus
     coefficients = curve_coefficients(genus)
-    curve = algebraic_curve(coefficients)
+    curve = Curve({(0, 2): 1, **{(i, 0): -c for i, c in enumerate(coefficients)}})
     first = curve.periods_kind_1()
     second = curve.periods_kind_2()
     data = (first.omega, first.tau, second.kappa,
@@ -733,7 +733,7 @@ def main():
         x = mp.mpf(genus + 2 + offset)
         y = mp.sqrt(polynomial_value(coefficients, x)) / 2
         points.append((x, y))
-        images.append(curve.abel_map_kind_1((x, 2 * y)))
+        images.append(curve.abel_map_kind_1((x, 2 * y)).value)
 
     print("Onishi Theorem 7.2: arbitrary-genus determinant check")
     print(f"genus: {genus}")

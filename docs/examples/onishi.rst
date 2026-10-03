@@ -47,9 +47,9 @@ uses ``(x, y)``. Keeping that factor of two explicit is essential.
 
 The period and characteristic data are obtained from the same curve::
 
-   from genera import algebraic_curve, kleinian_sigma, kleinian_sigma_jet
+   from genera import Curve, kleinian_sigma, kleinian_sigma_jet
 
-   curve = algebraic_curve(coefficients)
+   curve = Curve({(0, 2): 1, **{(i, 0): -c for i, c in enumerate(coefficients)}})
    first = curve.periods_kind_1()
    second = curve.periods_kind_2()
    data = (
@@ -60,11 +60,13 @@ The period and characteristic data are obtained from the same curve::
 Here ``coefficients`` is the ascending coefficient vector of :math:`4f`.
 For each selected point, the example computes its unreduced Abel image::
 
-   image = curve.abel_map_kind_1((x, 2*y))
+   image = curve.abel_map_kind_1((x, 2*y)).value
 
 The images retain the integration paths from infinity. Sums and differences
 are formed from those representatives without reducing each sigma argument
 independently to a fundamental cell.
+
+.. _onishi-sigma-example:
 
 Sigma on the one-point stratum
 ------------------------------

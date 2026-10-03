@@ -7,54 +7,94 @@ from . import _operations, _records, charts
 
 
 class Curve:
-    """A plane algebraic curve bound to an mpmath numerical context.
+    """Numerical computations on a plane algebraic curve.
 
-    Construct curves with ``algebraic_curve(specification)`` or the explicit
-    form ``Curve(ctx, specification)`` for custom contexts.
+    Parameters
+    ----------
+    polynomial : ``Mapping[tuple[int, int], scalar]``
+        Sparse coefficients ``{(i, j): coefficient}`` of ``F(x, y) = 0``,
+        where ``i`` and ``j`` are nonnegative integer powers of ``x`` and
+        ``y``. ``curve.polynomial`` returns a copy of this mapping.
+    differentials_kind_1 : ``Iterable[Callable[[scalar, scalar], scalar]] | None``
+        Ordered first-kind basis of ``g`` holomorphic forms, where ``g`` is
+        the genus. Each callable ``f(x, y) -> scalar`` returns the numeric
+        coefficient of ``dx`` in ``f(x, y) dx``. ``None`` selects an automatic
+        basis where supported.
+    differentials_kind_2 : ``Iterable[Callable[[scalar, scalar], scalar]] | None``
+        Ordered second-kind basis of ``g`` meromorphic forms with zero
+        residues. Each callable ``f(x, y) -> scalar`` returns the numeric
+        coefficient of ``dx``. ``None`` selects a compatible automatic basis
+        where supported; otherwise, methods needing this basis raise an error.
+    ctx : mpmath context or ``None``
+        Numerical context, defaulting to ``mpmath.mp``. A clone allows
+        independent working precision.
 
-    The canonical ``specification`` is a sparse ``(x_power, y_power)``
-    coefficient mapping. Sequences of ``(x_power, y_power, coefficient)``
-    terms and ascending coefficient sequences for ``y**2 = P(x)`` are also
-    accepted.
+    Notes
+    -----
+    Here ``scalar`` denotes a real or complex numeric value. Supplied bases
+    are stored as tuples and used by all relevant methods.
+    Definitions and examples are in :ref:`custom-differential-bases`.
 
-    The module automatically selects a computational engine: hyperelliptic
-    curves use specialized Baker marking with efficient branch-based integration;
-    other smooth plane curves use geometric polygon marking with automatic or
-    user-supplied differential bases. See the documentation for details on
-    computational engines and mathematical conventions.
+    Examples
+    --------
+    A genus-one curve:
 
-    Supplied first-kind differential callables must be holomorphic on the
-    curve; numerical checks cannot certify absence of poles. Supplied
-    second-kind forms may have poles but must have zero residues and be
-    regular along integration paths. Chart-backed endpoints extend integration
-    to ramification points and places at infinity when the integrals converge;
-    pole regularization is not provided.
+    >>> from genera import Curve
+    >>> # F(x, y) = y**2 + x - x**3
+    >>> polynomial = {(0, 2): 1, (1, 0): 1, (3, 0): -1}
+    >>> curve = Curve(polynomial=polynomial)
+    >>> curve.genus
+    1
+
+    A genus-two curve with a mixed ``x*y`` term:
+
+    >>> # F(x, y) = y**2 + 2*x*y + x**2 - x**5 + x - 1
+    >>> polynomial = {(0, 2): 1, (1, 1): 2, (2, 0): 1,
+    ...               (5, 0): -1, (1, 0): 1, (0, 0): -1}
+    >>> Curve(polynomial=polynomial).genus
+    2
+
+    An independent numerical context:
+
+    >>> from mpmath import mp
+    >>> ctx = mp.clone()
+    >>> ctx.dps = 50
+    >>> curve = Curve(polynomial=polynomial, ctx=ctx)
+    >>> curve.ctx.dps
+    50
     """
 
-    def __init__(self, ctx, specification):
+    def __init__(self, polynomial, *, differentials_kind_1=None,
+                 differentials_kind_2=None, ctx=None):
+        ctx = resolve_context(ctx)
         self.ctx = ctx
         self._creation_state = _operations._curve_cache_state(ctx)
         self._warned_states = set()
-        if hasattr(specification, "items"):
-            specification = dict(specification.items())
-        else:
-            try:
-                specification = tuple(specification)
-            except TypeError:
-                # Let the shared validator provide the public error message.
-                pass
-        self._specification = specification
+        if not hasattr(polynomial, "items"):
+            raise ValueError(
+                "polynomial must be a sparse mapping from (x_power, y_power) to coefficients")
+        self._polynomial = dict(polynomial.items())
         self._prepared, self._hyperelliptic_model = (
-            _operations._normalize_algebraic_curve_input(ctx, specification))
+            _operations._normalize_algebraic_curve_input(ctx, self._polynomial))
         self._classified_states = {
             self._creation_state: _records._ClassifiedCurve(
                 self._prepared, self._hyperelliptic_model)
         }
-        self._automatic_first_kind_periods = {}
+        self._differentials_kind_1 = (
+            None if differentials_kind_1 is None else
+            _operations._curve_differential_sequence(
+                differentials_kind_1, "differentials_kind_1"))
+        self._differentials_kind_2 = (
+            None if differentials_kind_2 is None else
+            _operations._curve_differential_sequence(
+                differentials_kind_2, "differentials_kind_2"))
+        self._custom_basis = (self._differentials_kind_1 is not None
+                              or self._differentials_kind_2 is not None)
+        self._first_kind_periods = {}
 
     @staticmethod
     def _copy_first_kind_periods(result):
-        """Copy mutable matrices in an automatic first-kind result."""
+        """Copy mutable matrices in a first-kind result."""
         return result._replace(
             omega=+result.omega,
             omega_prime=+result.omega_prime,
@@ -75,26 +115,43 @@ class Curve:
             )
             self._warned_states.add(state)
 
-    def _call(self, function, *args, **kwargs):
+    def _call(self, function, *args, _basis=False, **kwargs):
         self._check_precision()
         state = _operations._curve_cache_state(self.ctx)
         classified = self._classified_states.get(state)
         if classified is None:
             prepared, hyperelliptic = (
                 _operations._normalize_algebraic_curve_input(
-                    self.ctx, self._specification))
+                    self.ctx, self._polynomial))
             classified = _records._ClassifiedCurve(
                 prepared, hyperelliptic)
             self._classified_states[state] = classified
-        return function(
-            self.ctx, classified, *args, **kwargs)
+        if _basis and self._custom_basis:
+            classified = _records._ClassifiedCurve(classified.curve, None)
+        return function(self.ctx, classified, *args, **kwargs)
+
+    def _require_second_kind_basis(self, method):
+        if self._differentials_kind_2 is None and (
+                self._custom_basis or self._hyperelliptic_model is None):
+            raise ValueError(
+                f"{method} requires a second-kind basis; no compatible automatic "
+                "basis is available for this Curve. Construct Curve(..., "
+                "differentials_kind_2=...) with a compatible sequence of forms.")
 
     @property
-    def specification(self):
-        """The materialized input specification used to construct the curve."""
-        if isinstance(self._specification, dict):
-            return dict(self._specification)
-        return self._specification
+    def differentials_kind_1(self):
+        """The supplied first-kind basis, or ``None`` for automatic construction."""
+        return self._differentials_kind_1
+
+    @property
+    def differentials_kind_2(self):
+        """The supplied second-kind basis, or ``None`` if none was supplied."""
+        return self._differentials_kind_2
+
+    @property
+    def polynomial(self):
+        """Return a copy of the defining sparse polynomial mapping."""
+        return dict(self._polynomial)
 
     @property
     def x_degree(self):
@@ -120,8 +177,8 @@ class Curve:
         The lemniscatic curve :math:`y^2 = x^3 - x` has a two-sheeted
         projection with three finite branch values::
 
-            >>> from genera import algebraic_curve
-            >>> locus = algebraic_curve((0, -1, 0, 1)).branch_locus
+            >>> from genera import Curve
+            >>> locus = Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1}).branch_locus
             >>> locus.degree
             2
             >>> locus.branch_values
@@ -150,8 +207,8 @@ class Curve:
         Each finite branch value of the lemniscatic curve
         :math:`y^2 = x^3 - x` exchanges its two sheets, as does infinity::
 
-            >>> from genera import algebraic_curve
-            >>> monodromy = algebraic_curve((0, -1, 0, 1)).monodromy
+            >>> from genera import Curve
+            >>> monodromy = Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1}).monodromy
             >>> monodromy.genus
             1
             >>> monodromy.permutations
@@ -177,37 +234,38 @@ class Curve:
         total ramification. The Riemann-Hurwitz balance :math:`2g-2 = -2d+r`
         can be verified directly::
 
-            >>> from genera import algebraic_curve
-            >>> algebraic_curve((0, -1, 0, 1)).genus_data
+            >>> from genera import Curve
+            >>> Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1}).genus_data
             CurveGenus(genus=1, degree=2, ramification=4)
         """
         return self._call(_operations.genus_data)
 
     @property
     def homology(self):
-        r"""Return the homology marking used by the curve's default engine.
+        r"""Return the homology marking selected by the curve's bound bases.
 
         Returns a ``CurveHomology`` record containing ``2*genus`` cycles in a
         canonical symplectic basis with the standard intersection form. The
         ``marking`` field identifies the computational engine: ``'baker'`` for
-        hyperelliptic curves, ``'geometric-polygon'`` for others.
+        automatic hyperelliptic bases, ``'geometric-polygon'`` for custom bases
+        and other supported curves.
 
         The lemniscatic curve :math:`y^2 = x^3 - x` uses Baker marking::
 
-            >>> from genera import algebraic_curve
-            >>> homology = algebraic_curve((0, -1, 0, 1)).homology
+            >>> from genera import Curve
+            >>> homology = Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1}).homology
             >>> homology.genus, homology.marking
             (1, 'baker')
             >>> homology.intersection_form
             ((0, 1), (-1, 0))
         """
-        return self._call(_operations.homology)
+        return self._call(_operations.homology, _basis=True)
 
-    def periods_kind_1(self, differentials=None):
+    def periods_kind_1(self):
         r"""Return first-kind half-periods and the normalized Riemann matrix.
 
         Generalizes elliptic period computation to genus :math:`g`. Returns a
-        ``CurveFirstKindPeriods`` record with half-period matrices ``omega``,
+        ``CurvePeriodsKind1`` record with half-period matrices ``omega``,
         ``omega_prime``, and the normalized Riemann matrix ``tau`` (the symmetric
         part of ``omega**-1 * omega_prime``). Full periods are ``2*omega`` and
         ``2*omega_prime``.
@@ -234,53 +292,47 @@ class Curve:
             2\omega' &= \oint_b \frac{dx}{y}.
             \end{aligned}
 
-        With no arguments, uses the automatic differential basis: hyperelliptic
-        curves get ``x**k dx/z`` in Baker marking; other curves get a basis from
-        Newton polygon interior points when the edge and genus checks pass.
-        Otherwise, supply ``differentials``: one holomorphic callable
-        ``f(x, y)`` per genus, giving the coefficient of ``dx``. A supplied
-        basis selects the geometric-polygon engine, including for a recognized
-        hyperelliptic curve.
+        Uses the ordered first-kind basis bound at construction. If no basis
+        was supplied, hyperelliptic curves get ``x**k dx/z`` in Baker marking;
+        other supported curves get a basis from Newton polygon interior points.
+        Supplying either basis at construction selects geometric-polygon marking,
+        using an automatic geometric first-kind basis if necessary.
+        See :ref:`custom-differential-bases` for definitions and a worked example.
 
         A non-positive-definite period matrix raises ``ValueError``.
 
         The lemniscatic curve has normalized period matrix ``tau = i``::
 
-            >>> from genera import algebraic_curve
+            >>> from genera import Curve
             >>> from mpmath import mp
             >>> mp.dps = 15
-            >>> curve = algebraic_curve((0, -1, 0, 1))
+            >>> curve = Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1})
             >>> data = curve.periods_kind_1()
             >>> mp.re(data.tau[0, 0]), mp.im(data.tau[0, 0])
             (mpf('0.0'), mpf('1.0'))
 
         A supplied basis uses geometric-polygon marking::
 
-            >>> data = curve.periods_kind_1((lambda x, y: 1 / y,))
+            >>> custom = Curve(curve.polynomial, differentials_kind_1=(lambda x, y: 1 / y,))
+            >>> data = custom.periods_kind_1()
             >>> data.marking
             'geometric-polygon'
             >>> curve.validate(data).passed
             True
         """
+        self._check_precision()
         state = _operations._curve_cache_state(self.ctx)
-        if differentials is None:
-            cached = self._automatic_first_kind_periods.get(state)
-            if cached is not None:
-                return self._copy_first_kind_periods(cached)
-        result = self._call(
-            _operations.periods,
-            differentials,
-        )
-        if differentials is None:
-            self._automatic_first_kind_periods[state] = (
-                self._copy_first_kind_periods(result))
+        cached = self._first_kind_periods.get(state)
+        if cached is not None:
+            return self._copy_first_kind_periods(cached)
+        result = self._call(_operations.periods, self._differentials_kind_1, _basis=True)
+        self._first_kind_periods[state] = self._copy_first_kind_periods(result)
         return result
 
-    def periods_kind_2(self, differentials=None, *,
-                            second_differentials=None):
+    def periods_kind_2(self):
         r"""Return second-kind half-periods and kappa.
 
-        The ``CurveSecondKindPeriods`` record contains ``eta``, ``eta_prime``
+        The ``CurvePeriodsKind2`` record contains ``eta``, ``eta_prime``
         and ``kappa``, with ``2*eta = -integral_a(dr)`` and
         ``2*eta_prime = -integral_b(dr)``. The returned ``kappa`` is the symmetric
         part of ``eta * omega**-1`` for the compatible first-kind half-periods.
@@ -312,49 +364,45 @@ class Curve:
         These periods describe the changes of a second-kind integral around
         cycles, analogous to the quasi-periods of Weierstrass zeta.
 
-        Recognized hyperelliptic models use the automatic BEL basis and Baker
-        marking. The general engine requires one callable per genus in
-        ``second_differentials``; its first-kind basis may be supplied or
-        selected automatically. To override second-kind forms on a recognized
-        hyperelliptic model, also supply the first-kind ``differentials``.
+        Uses the second-kind basis bound through ``Curve(differentials_kind_2=...)``.
+        With neither basis supplied, recognized hyperelliptic models construct
+        the automatic BEL basis in Baker marking. Otherwise, a missing
+        second-kind basis raises ``ValueError`` explaining how to supply it.
+        Each supplied basis must contain one coefficient-of-``dx`` callable
+        per genus. See :ref:`custom-differential-bases` for a complete example.
 
         Supplied second-kind forms must have zero residues and be regular on
         the integration paths; numerical convergence checks do not establish
         those properties. ``engine`` and ``marking`` describe the cycle basis.
-        With automatic first-kind forms, compatible first-kind results are
-        cached for later calls to :meth:`periods_kind_1`.
+        Compatible first-kind results are cached for later calls to
+        :meth:`periods_kind_1`.
         """
-        result = self._call(
-            _operations.periods,
-            differentials,
-            second_kind=True,
-            second_differentials=second_differentials,
-            _return_first=True,
-        )
-        first, second = result
-        if differentials is None:
-            state = _operations._curve_cache_state(self.ctx)
-            self._automatic_first_kind_periods[state] = (
-                self._copy_first_kind_periods(first))
+        self._require_second_kind_basis("periods_kind_2()")
+        first, second = self._call(
+            _operations.periods, self._differentials_kind_1,
+            second_kind=True, second_differentials=self._differentials_kind_2,
+            _return_first=True, _basis=True)
+        state = _operations._curve_cache_state(self.ctx)
+        self._first_kind_periods[state] = self._copy_first_kind_periods(first)
         return second
 
-    def riemann_matrix(self, differentials=None):
+    def riemann_matrix(self):
         r"""Return the normalized Riemann matrix of a plane algebraic curve.
 
         This is a convenience wrapper returning
-        ``curve.periods_kind_1(differentials).tau``; see
+        ``curve.periods_kind_1().tau``; see
         :meth:`Curve.periods_kind_1` for the input conventions.
 
-            >>> from genera import algebraic_curve
+            >>> from genera import Curve
             >>> from mpmath import mp
             >>> mp.dps = 15
-            >>> tau = algebraic_curve((0, -1, 0, 1)).riemann_matrix()
+            >>> tau = Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1}).riemann_matrix()
             >>> mp.im(tau[0, 0])
             mpf('1.0')
         """
-        return self._call(_operations.riemann_matrix, differentials)
+        return self.periods_kind_1().tau
 
-    def riemann_constant(self, differentials=None, *, base_place=None):
+    def riemann_constant(self, *, base_place=None):
         r"""Return the vector of Riemann constants for a plane curve.
 
         The returned ``CurveRiemannConstant`` contains a direct representative of
@@ -364,26 +412,26 @@ class Curve:
         ``base_place`` (``None`` denotes the engine's natural base), and the
         maximum sheet residual of the direct contour integrations.
 
-        For a general plane curve, ``differentials`` may supply one holomorphic
-        differential per genus, in exactly the basis accepted by
-        :meth:`Curve.periods_kind_1`. The value is computed directly from the
-        certified canonical polygon and level-two contour integrals; theta
-        functions and characteristic searches are not used.  ``base_place`` may
-        be a regular finite place or a chart-backed place.  Changing the base
-        uses ``K_Q = K_P + (g-1) A_P(Q)`` in normalized coordinates.
-
-        Structurally hyperelliptic input without supplied differentials dispatches
-        to the Baker-marked specialized periods and characteristic convention.
+        Uses the same first-kind basis and marking as :meth:`periods_kind_1`
+        and :meth:`abel_map_kind_1`, bound at construction. No second-kind
+        forms are required. For the geometric engine, the value is computed
+        from the canonical polygon and level-two contour integrals; theta
+        functions and characteristic searches are not used.
+        ``base_place`` may be a regular finite or chart-backed place. Changing
+        the base uses ``K_Q = K_P + (g-1) A_P(Q)`` in normalized coordinates.
+        The companion Abel map uses the same base for compatible coordinates.
+        See :ref:`custom-differential-bases` for a worked example.
 
         In genus one the answer is the odd half-period ``(1+tau)/2``::
 
-            >>> from genera import algebraic_curve
+            >>> from genera import Curve
             >>> from mpmath import mp
             >>> mp.dps = 15
-            >>> curve = algebraic_curve({(0, 2): 1, (1, 0): 1, (3, 0): -1})
+            >>> curve = Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1})
             >>> forms = (lambda x, y: 1 / y,)
-            >>> constant = curve.riemann_constant(forms)
-            >>> periods = curve.periods_kind_1(forms)
+            >>> custom = Curve(curve.polynomial, differentials_kind_1=forms)
+            >>> constant = custom.riemann_constant()
+            >>> periods = custom.periods_kind_1()
             >>> mp.almosteq(constant.value[0], (1 + periods.tau[0, 0]) / 2)
             True
 
@@ -392,17 +440,16 @@ class Curve:
         characteristic enumeration.
         """
         return self._call(
-            _operations.riemann_constant,
-            differentials,
-            base_place=base_place,
+            _operations.riemann_constant, self._differentials_kind_1,
+            base_place=base_place, _basis=True,
         )
 
     def validate(self, result):
         r"""Validate a result record returned by the curve functions.
 
         ``result`` is one of ``CurveBranchLocus``, ``CurveMonodromy``,
-        ``CurveGenus``, ``CurveHomology``, ``CurveFirstKindPeriods``,
-        ``CurveSecondKindPeriods`` or ``CurveRiemannConstant``. The returned
+        ``CurveGenus``, ``CurveHomology``, ``CurvePeriodsKind1``,
+        ``CurvePeriodsKind2`` or ``CurveRiemannConstant``. The returned
         ``CurveValidation`` record contains one named ``CurveCheck`` per
         invariant, the largest numerical residual among them, and whether
         every check passed.
@@ -411,8 +458,8 @@ class Curve:
         integration residuals use recorded values. Tolerances use the
         current context precision; curve data is not recomputed.
 
-            >>> from genera import algebraic_curve
-            >>> curve = algebraic_curve((0, -1, 0, 1))
+            >>> from genera import Curve
+            >>> curve = Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1})
             >>> report = curve.validate(curve.periods_kind_1())
             >>> report.passed
             True
@@ -433,10 +480,10 @@ class Curve:
         monodromy base point they agree with the labels used by
         :attr:`Curve.monodromy`.
 
-        >>> from genera import algebraic_curve
+        >>> from genera import Curve
             >>> from mpmath import mp
         >>> mp.dps = 15
-        >>> curve = algebraic_curve((0, -1, 0, 1))
+        >>> curve = Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1})
         >>> [mp.nstr(place.y, 6) for place in curve.fibre(2)]
         ['-2.44949', '2.44949']
         """
@@ -460,10 +507,10 @@ class Curve:
         lie on the sheet reached by continuation; otherwise ``ValueError`` is
         raised.
 
-        >>> from genera import algebraic_curve
+        >>> from genera import Curve
             >>> from mpmath import mp
         >>> mp.dps = 15
-        >>> curve = algebraic_curve({(0, 2): 1, (1, 0): -1})
+        >>> curve = Curve({(0, 2): 1, (1, 0): -1})
         >>> path = curve.path((1, 1), (4, 2))
         >>> mp.nstr(path.start.y, 6), mp.nstr(path.end.y, 6)
         ('1.0', '2.0')
@@ -484,10 +531,14 @@ class Curve:
         the curve and working precision at which it was constructed and cannot
         be reused with a different curve or precision.
 
-        >>> from genera import algebraic_curve
+        Unlike period and Abel-map bases, the sequence need not contain one
+        holomorphic form per genus; its integrals only need to converge along
+        this path. See :ref:`custom-differential-bases` for the callable convention.
+
+        >>> from genera import Curve
             >>> from mpmath import mp
         >>> mp.dps = 15
-        >>> curve = algebraic_curve({(0, 2): 1, (1, 0): -1})
+        >>> curve = Curve({(0, 2): 1, (1, 0): -1})
         >>> path = curve.path((1, 1), (4, 2))
         >>> integral = curve.integral(lambda x, y: 1 / y, path)
         >>> mp.nstr(integral.values, 12)
@@ -495,14 +546,14 @@ class Curve:
         """
         return self._call(_operations.integral, differentials, path)
 
-    def abel_map_kind_1(self, target, differentials=None, *, base_place=None,
+    def abel_map_kind_1(self, target, *, base_place=None,
                  reduce=False):
         r"""Evaluate the Abel map of a place or divisor on a plane curve.
 
         Generalizes elliptic integrals to genus :math:`g`, integrating :math:`g`
-        differentials simultaneously from a base place to a target. Returns an
-        unnormalized vector in :math:`\mathbb{C}^g`, defined modulo its period
-        lattice.
+        differentials simultaneously from a base place to a target. Returns a
+        ``CurveAbelMapKind1`` record whose ``value`` is an unnormalized vector
+        in :math:`\mathbb{C}^g`, defined modulo its period lattice.
 
         For a base place :math:`Q` and an effective divisor
         :math:`D=P_1+\cdots+P_n`, the components are
@@ -527,10 +578,13 @@ class Curve:
 
         ``target`` is a single place (as ``(x, y)`` pair or ``CurvePlace``),
         a chart-backed place, or a sequence of places (effective divisor). An
-        empty sequence returns the zero vector. Use ``differentials`` to override
-        the automatic basis. For a chart-backed endpoint on a recognized
-        hyperelliptic curve, supply first-kind ``differentials`` to select the
-        geometric-polygon engine.
+        empty sequence returns a record with a zero ``value`` vector.
+        Uses the first-kind basis bound at construction, with exactly one
+        holomorphic coefficient-of-``dx`` callable per genus. It shares this
+        basis and marking with :meth:`periods_kind_1` and :meth:`riemann_constant`.
+        For chart-backed endpoints on a recognized hyperelliptic curve, bind
+        a custom basis to select geometric-polygon marking.
+        See :ref:`custom-differential-bases` for a worked example.
 
         ``base_place`` defaults to the selected engine's natural base: the
         point at infinity for odd-degree hyperelliptic models, the first
@@ -539,32 +593,34 @@ class Curve:
         engine.
         With ``reduce=True``, the result is reduced modulo the period lattice
         ``[2*omega, 2*omega_prime]`` of the selected first-kind basis.
+        ``reduction_shift`` records the integer cycle shift, or is ``None``
+        when reduction is disabled. ``engine`` and ``marking`` identify the
+        calculation route and cycle convention.
 
-        >>> from genera import algebraic_curve
+        >>> from genera import Curve
             >>> from mpmath import mp
         >>> mp.dps = 15
-        >>> curve = algebraic_curve({(0, 2): 1, (1, 0): 1, (3, 0): -1})
+        >>> curve = Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1})
         >>> point = (mp.mpf(2), mp.sqrt(6))
         >>> forms = (lambda x, y: 1 / y,)
-        >>> value = curve.abel_map_kind_1(point, forms, base_place=point)
+        >>> custom = Curve(curve.polynomial, differentials_kind_1=forms)
+        >>> value = custom.abel_map_kind_1(point, base_place=point).value
         >>> mp.nstr(mp.norm(value), 3)
         '0.0'
         """
         return self._call(
-            _operations.abel_map,
-            target,
-            differentials,
+            _operations.abel_map, target, self._differentials_kind_1,
+            _basis=True,
             base_place=base_place,
             reduce=reduce,
         )
 
     def abel_map_kind_2(
-            self, target, differentials=None, *, second_differentials=None,
-            base_place=None, reduce=False):
+            self, target, *, base_place=None, reduce=False):
         r"""Evaluate second-kind Abelian integrals of a place or divisor.
 
         ``target`` and ``base_place`` have the same meanings as in :meth:`abel_map_kind_1`.
-        Returns a ``CurveSecondKindAbelMap`` record with the second-kind ``value``.
+        Returns a ``CurveAbelMapKind2`` record with the second-kind ``value``.
 
         For a second-kind basis :math:`dr_1,\ldots,dr_g`, a base place
         :math:`Q`, and an effective divisor :math:`D=P_1+\cdots+P_n`,
@@ -595,24 +651,24 @@ class Curve:
             r_{\mathrm{reduced}} &= r+2\eta m+2\eta'n.
             \end{aligned}
 
-        Hyperelliptic curves use automatic BEL basis construction. The geometric
-        polygon engine requires explicit ``second_differentials``; to override
-        the second-kind basis on a recognized hyperelliptic curve, also supply
-        first-kind ``differentials`` to select that engine. Supplied second-kind
-        forms must have zero residues and be regular along the integration
-        paths. With ``reduce=True``, the compatible first-kind Abel map
-        determines a cycle shift applied to both first- and second-kind values,
-        recorded as ``reduction_shift``.
+        Uses the first- and second-kind bases bound at construction. With
+        neither supplied, recognized hyperelliptic models use automatic BEL
+        construction. If no compatible second-kind basis is available, raises
+        ``ValueError`` explaining how to construct a curve with one.
+        Supplied forms must have zero residues and be regular along the path.
+        With ``reduce=True``, the bound first-kind Abel map determines the cycle
+        shift applied to the second-kind value, recorded as ``reduction_shift``.
+        See :ref:`custom-differential-bases` for definitions and an example.
 
         Chart-backed endpoints use the geometric polygon engine. Chart integration
         paths must converge; pole regularization is not performed.
         """
+        self._require_second_kind_basis("abel_map_kind_2()")
         return self._call(
-            _operations.abel_map,
-            target,
-            differentials,
+            _operations.abel_map, target, self._differentials_kind_1,
+            _basis=True,
             second_kind=True,
-            second_differentials=second_differentials,
+            second_differentials=self._differentials_kind_2,
             base_place=base_place,
             reduce=reduce,
         )
@@ -621,17 +677,17 @@ class Curve:
         r"""Reduce a Jacobian vector modulo the period lattice.
 
         ``value`` is a genus-length column vector of Abelian coordinates. If
-        ``periods`` is a ``CurveFirstKindPeriods`` record, ``value`` is in the
+        ``periods`` is a ``CurvePeriodsKind1`` record, ``value`` is in the
         original differential basis and is reduced by the full lattice
         ``[2*omega, 2*omega_prime]``.  If ``periods`` is a normalized Riemann
         matrix ``tau``, ``value`` is in normalized coordinates and is reduced
         by ``[I, tau]``.  The returned ``CurveLatticeReduction`` record contains
         the equivalent vector and the integer lattice shift ``(m, n)``.
 
-        >>> from genera import algebraic_curve
+        >>> from genera import Curve
             >>> from mpmath import mp
         >>> mp.dps = 15
-        >>> curve = algebraic_curve((0, -1, 0, 1))
+        >>> curve = Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1})
         >>> tau = curve.riemann_matrix()
         >>> reduced = curve.lattice_reduce(mp.matrix([2 + 1j]), tau)
         >>> reduced.shift
@@ -646,8 +702,7 @@ class Curve:
         r"""Return a user-supplied local chart of a plane algebraic curve.
 
         ``chart_curve`` gives the local curve as a sparse mapping from
-        ``(t_power, w_power)`` pairs to coefficients, or a sequence of
-        ``(t_power, w_power, coefficient)`` terms.  ``coordinate_map(t, w)``
+        ``(t_power, w_power)`` pairs to coefficients.  ``coordinate_map(t, w)``
         must return the ambient triple ``(x, y, dx/dt)``, where ``x`` depends
         on ``t`` alone.  The returned ``CurveChart`` is bound to the ambient
         curve and working precision, and is accepted by the other chart
@@ -665,7 +720,7 @@ class Curve:
         """
         self._check_precision()
         if source is None:
-            source = self._specification
+            source = self._polynomial
         return charts.monomial_chart(
             self.ctx, source, x_power, y_power)
 
@@ -691,10 +746,10 @@ class Curve:
         the working precision.  The chart must parametrize ``curve``: the
         cutoff point is checked to lie on the curve.
 
-        >>> from genera import algebraic_curve
+        >>> from genera import Curve
             >>> from mpmath import mp
         >>> mp.dps = 15
-        >>> curve = algebraic_curve({(0, 2): 1, (1, 0): 1, (3, 0): -1})
+        >>> curve = Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1})
         >>> chart = curve.monomial_chart(-2, -3)
         >>> [mp.nstr(value, 3) for value in curve.chart_fibre(chart, 0)]
         ['(-1.0 + 0.0j)', '(1.0 + 0.0j)']
@@ -728,28 +783,11 @@ class Curve:
         )
 
 
-def algebraic_curve(specification, *, ctx=None):
-    r"""Construct a :class:`Curve` using an optional numerical context.
-
-    ``specification`` describes the equation :math:`F(x,y)=0`. It accepts a
-    sparse mapping from ``(i, j)`` to the coefficient of :math:`x^i y^j`,
-    a sequence of ``(i, j, coefficient)`` terms, or an ascending coefficient
-    sequence ``(p0, p1, ..., pn)`` for :math:`y^2=P(x)`, where
-    :math:`P(x)=p_0+p_1 x+\cdots+p_n x^n`. The defining polynomial must
-    depend on :math:`y`.
-
-    With ``ctx=None``, the curve uses the standard ``mpmath.mp`` context.
-    Passing ``ctx`` selects a custom context. This convenience function
-    returns ``Curve(ctx, specification)`` after resolving the context;
-    both entry points create the same kind of object.
-    """
-    return Curve(resolve_context(ctx), specification)
-
-
 CurveBranchLocus = _records.CurveBranchLocus
-CurveFirstKindPeriods = _records.CurveFirstKindPeriods
-CurveSecondKindPeriods = _records.CurveSecondKindPeriods
-CurveSecondKindAbelMap = _records.CurveSecondKindAbelMap
+CurvePeriodsKind1 = _records.CurvePeriodsKind1
+CurvePeriodsKind2 = _records.CurvePeriodsKind2
+CurveAbelMapKind1 = _records.CurveAbelMapKind1
+CurveAbelMapKind2 = _records.CurveAbelMapKind2
 CurveMonodromy = _records.CurveMonodromy
 CurveGenus = _records.CurveGenus
 CurveHomology = _records.CurveHomology
@@ -765,11 +803,10 @@ CurveLatticeReduction = _records.CurveLatticeReduction
 
 __all__ = [
     "Curve",
-    "algebraic_curve",
     "CurveBranchLocus",
     "CurveChart",
     "CurveCheck",
-    "CurveFirstKindPeriods",
+    "CurvePeriodsKind1",
     "CurveGenus",
     "CurveHomology",
     "CurveIntegral",
@@ -778,7 +815,8 @@ __all__ = [
     "CurvePath",
     "CurvePlace",
     "CurveRiemannConstant",
-    "CurveSecondKindAbelMap",
-    "CurveSecondKindPeriods",
+    "CurveAbelMapKind1",
+    "CurveAbelMapKind2",
+    "CurvePeriodsKind2",
     "CurveValidation",
 ]

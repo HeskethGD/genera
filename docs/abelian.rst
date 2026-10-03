@@ -22,6 +22,10 @@ Weierstrass functions to higher genus.
 Riemann theta functions
 .......................
 
+The :ref:`Bobenko theta calculation <bobenko-theta-example>` uses ``rtheta``
+for characteristic-dependent theta quotients and ``rtheta_jet`` for their
+derivatives along the flow.
+
 .. autofunction:: genera.rtheta
 
 The following plots show two real slices and the modulus over two real
@@ -67,9 +71,9 @@ Curve data for Kleinian functions
 
 Curve construction, homology markings, period matrices, Riemann constants,
 and Abel maps are documented in :doc:`algebraic_curves`. For a recognized
-hyperelliptic curve, obtain mutually compatible inputs from one curve object::
+hyperelliptic curve, one curve object provides mutually compatible inputs::
 
-   curve = algebraic_curve({(0, 2): 1, (1, 0): 4, (3, 0): -4})
+   curve = Curve({(0, 2): 1, (1, 0): 4, (3, 0): -4})
    first = curve.periods_kind_1()
    second = curve.periods_kind_2()
    constant = curve.riemann_constant()
@@ -80,6 +84,23 @@ hyperelliptic curve, obtain mutually compatible inputs from one curve object::
 
 The same curve supplies first- and second-kind Abelian integrals. Period data
 should normally be constructed once and reused for many evaluations.
+The optional ``ctx`` argument uses the same convention throughout Genera;
+see the :ref:`Curve constructor examples <numerical-contexts>` for an
+independent-precision example.
+
+The :ref:`custom-differential-bases` guide covers custom first-kind sequences
+and compatible second-kind forms. These are bound to ``Curve`` at construction;
+its period, Riemann-constant, and Abel-map methods use the same bases automatically.
+The Abel vector, ``omega``, ``kappa``, and P-function indices all refer to
+that ordered basis. A change of basis or second-kind convention changes the
+meaning of these inputs. In particular, the hyperelliptic sigma normalization
+assumes the automatic differential ordering and scaling; it is not a general
+normalizer for arbitrary custom bases.
+
+The :ref:`Manakov example <manakov-period-data>` constructs and reuses these
+inputs for a hyperelliptic curve; the :ref:`Bernatska example <bernatska-custom-bases>`
+uses explicit first- and second-kind differential bases on a trigonal curve.
+
 
 Kleinian functions
 ..................
@@ -98,6 +119,12 @@ Riemann matrix ``tau``, and the symmetric matrix ``kappa``. The convention is
 The characteristic uses the same literal convention as :func:`genera.rtheta`.
 For compatible hyperelliptic curve data, the canonical normalization is
 selected with ``normalization="hyperelliptic"``.
+
+The :ref:`Ônishi sigma calculation <onishi-sigma-example>` uses
+``kleinian_sigma`` and ``kleinian_sigma_jet`` on Abel images, including
+derivatives where sigma itself vanishes. The
+:ref:`Manakov solution <manakov-kleinian-example>` uses batched
+``kleinian_p`` evaluations to reconstruct amplitudes and momenta.
 
 .. autofunction:: genera.kleinian_sigma
 

@@ -51,7 +51,7 @@ coefficients = curve_coefficients()
 separation = a1 - a2
 c1_squared = -polynomial_value(coefficients, a1) / separation**2
 c2_squared = -polynomial_value(coefficients, a2) / separation**2
-curve = mp.algebraic_curve(coefficients)
+curve = Curve({(0, 2): 1, **{(i, 0): -c for i, c in enumerate(coefficients)}})
 first = curve.periods_kind_1()
 second = curve.periods_kind_2()
 omega, tau = first.omega, first.tau
@@ -135,7 +135,7 @@ Thus the phase is reconstructed by
 
 ```python
 divisor = divisor_from_state(initial_state, data)
-image = data["curve"].abel_map_kind_1(divisor, reduce=True)
+image = data["curve"].abel_map_kind_1(divisor, reduce=True).value
 ```
 
 The returned representative differs from the original Abelian point by a

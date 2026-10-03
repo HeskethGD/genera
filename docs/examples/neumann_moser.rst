@@ -14,6 +14,8 @@ The curve and Abelian phase are chosen for this demonstration. The
 standalone examples also include a genus-two version; this page uses
 genus three to exercise a degree-three divisor and additional Kleinian
 identities.
+The genus-two calculation below also starts from independently specified
+physical coefficients and computes their curve and Abelian phase.
 
 The equations of motion
 -----------------------
@@ -78,9 +80,9 @@ The runnable script expands the polynomial into ascending coefficients
 and constructs compatible first-kind, second-kind and Riemann-constant
 data from one curve object::
 
-   from genera import algebraic_curve, kleinian_p
+   from genera import Curve, kleinian_p
 
-   curve = algebraic_curve(coefficients)
+   curve = Curve({(0, 2): 1, **{(i, 0): -c for i, c in enumerate(coefficients)}})
    first = curve.periods_kind_1()
    second = curve.periods_kind_2()
    omega, tau = first.omega, first.tau
@@ -173,7 +175,7 @@ The inverse loop uses only the physical state and its polynomial
 coefficients to construct the divisor::
 
    divisor = divisor_from_state(state)
-   image = data["curve"].abel_map_kind_1(divisor, reduce=True)
+   image = data["curve"].abel_map_kind_1(divisor, reduce=True).value
 
 At :math:`t=0`, the example checks that all three points lie on the
 curve, that the image recovers the chosen phase modulo full periods,
@@ -205,6 +207,65 @@ at the phase origin:
 The :math:`\lambda_4/2` coefficient is tied to this sigma and curve
 normalization. The last two identities exercise quantities that are
 absent from the genus-two example.
+
+.. _neumann-moser-initial-conditions:
+
+Starting from physical initial conditions (genus two)
+-----------------------------------------------------
+
+The genus-two script also accepts a seven-coordinate initial state,
+without choosing an Abelian phase first. For example,
+
+.. math::
+
+   \begin{aligned}
+   (u_1,u_2,v_1,v_2,w_1,w_2,w_3)
+      &=(-1,-2,1/10,1/5,1,-55/4,-7),\\
+   U(s)&=(s+1)(s-2),\\
+   V(s)&=s/10+1/5,\\
+   W(s)&=(s+4)(s+1/2)(s-7/2),\\
+   F(s)&=4\bigl(U(s)W(s)+V(s)^2\bigr).
+   \end{aligned}
+
+The invariant constructs the curve. The roots of :math:`U` and the sheets
+:math:`y_j=2V(s_j)` give its initial divisor; ``abel_map_kind_1`` then
+determines the offset. This variant uses the canonical form
+:math:`w_1=-u_1`, giving no :math:`s^4` term in :math:`F`.
+
+.. literalinclude:: ../../examples/neumann_moser/neumann_moser_kleinian_demo.py
+   :language: python
+   :start-at: def data_from_initial_state(
+   :end-before: def period_lattice_residual(
+
+The recovered Kleinian solution is compared with RK4 initialized directly
+from the supplied coefficients, rather than from an analytic evaluation:
+
+.. doctest::
+
+   >>> from mpmath import mp
+   >>> from examples.neumann_moser.neumann_moser_kleinian_demo import initial_value_example
+   >>> with mp.workdps(25):
+   ...     rows = initial_value_example()
+   ...     coarse = initial_value_example(steps=64)
+   >>> max(rows[0][3]) < 1e-20
+   True
+   >>> fine_error = max(max(row[3]) for row in rows)
+   >>> fine_error < 1e-11
+   True
+   >>> 8 < max(max(row[3]) for row in coarse) / fine_error < 32
+   True
+
+On :math:`[0,0.1]` at 25 decimal digits, the initial reconstruction residual
+is about :math:`10^{-25}` and the maximum sampled state error with 128 RK4
+steps is about :math:`9\times10^{-13}`. Halving the step size reduces the
+error by about a factor of sixteen. The initial coefficients are rational
+inputs; no phase or trajectory value is fitted.
+
+The same workflow is available from the command line::
+
+   python -m examples.neumann_moser.neumann_moser_kleinian_demo \
+       --initial-state -1 -2 0.1 0.2 1 -13.75 -7 \
+       --start=0 --stop=0.1 --steps 128 --samples 5
 
 The trajectory
 ---------------

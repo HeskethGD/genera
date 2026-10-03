@@ -18,7 +18,7 @@ Run from the Genera repository root with
 import argparse
 from dataclasses import dataclass
 
-from genera import algebraic_curve, kleinian_p
+from genera import Curve, kleinian_p
 from mpmath import mp
 
 from examples._rk4 import rk4_step, rk4_trajectory
@@ -65,7 +65,7 @@ def problem_data():
     separation = a1 - a2
     c1_squared = -polynomial_value(coefficients, a1) / separation ** 2
     c2_squared = -polynomial_value(coefficients, a2) / separation ** 2
-    curve = algebraic_curve(coefficients)
+    curve = Curve({(0, 2): 1, **{(i, 0): -c for i, c in enumerate(coefficients)}})
     first = curve.periods_kind_1()
     second = curve.periods_kind_2()
     omega, tau, kappa, characteristic = (
@@ -185,7 +185,7 @@ def abel_map_residuals(data):
     curve_residual = max(abs(
         y ** 2 - polynomial_value(data["coefficients"], x))
         for x, y in divisor)
-    image = data["curve"].abel_map_kind_1(divisor, reduce=True)
+    image = data["curve"].abel_map_kind_1(divisor, reduce=True).value
     lattice_residual = period_lattice_residual(
         image, data["u_offset"], data)
     recovered_data = dict(data)

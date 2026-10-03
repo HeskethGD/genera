@@ -72,35 +72,10 @@ def _normalize_algebraic_curve_input(ctx, curve):
     """Return a prepared curve and its optional specialized model."""
     if isinstance(curve, _ClassifiedCurve):
         return curve.curve, curve.hyperelliptic
-    if hasattr(curve, "items"):
-        prepared = _prepare_plane_curve(ctx, curve)
-    else:
-        try:
-            values = tuple(curve)
-        except TypeError:
-            raise ValueError("curve must be coefficients or sparse plane terms")
-        if not values:
-            raise ValueError("curve must not be empty")
-        if all(isinstance(term, (tuple, list)) and len(term) == 3
-               for term in values):
-            terms = {}
-            for x_power, y_power, coefficient in values:
-                try:
-                    coefficient = ctx.convert(coefficient)
-                except (TypeError, ValueError):
-                    raise ValueError("polynomial coefficients must be numbers")
-                key = (x_power, y_power)
-                terms[key] = terms.get(key, ctx.zero) + coefficient
-            prepared = _prepare_plane_curve(ctx, terms)
-        else:
-            coefficients = tuple(ctx.convert(value) for value in values)
-            terms = {(0, 2): ctx.one}
-            terms.update({
-                (degree, 0): -coefficient
-                for degree, coefficient in enumerate(coefficients)
-                if coefficient
-            })
-            prepared = _prepare_plane_curve(ctx, terms)
+    if not hasattr(curve, "items"):
+        raise ValueError(
+            "polynomial must be a sparse mapping from (x_power, y_power) to coefficients")
+    prepared = _prepare_plane_curve(ctx, curve)
     return prepared, _classify_hyperelliptic_model(ctx, prepared)
 
 

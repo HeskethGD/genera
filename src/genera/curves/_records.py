@@ -68,13 +68,13 @@ CurveHomology = namedtuple(
     "genus cycle_count boundary_components intersection_rank radical_rank "
     "intersection_form transformation engine marking",
     defaults=(None, None))
-CurveFirstKindPeriods = namedtuple(
-    "CurveFirstKindPeriods",
+CurvePeriodsKind1 = namedtuple(
+    "CurvePeriodsKind1",
     "genus differentials omega omega_prime tau symmetry_residual "
     "imaginary_eigenvalues max_sheet_residual engine marking",
     defaults=(None, None))
-CurveSecondKindPeriods = namedtuple(
-    "CurveSecondKindPeriods",
+CurvePeriodsKind2 = namedtuple(
+    "CurvePeriodsKind2",
     "genus differentials eta eta_prime kappa kappa_symmetry_residual "
     "max_sheet_residual engine marking",
     defaults=(None, None))
@@ -82,8 +82,10 @@ CurveRiemannConstant = namedtuple(
     "CurveRiemannConstant",
     "value characteristic base_place max_sheet_residual engine marking",
     defaults=(None, None))
-CurveSecondKindAbelMap = namedtuple(
-    "CurveSecondKindAbelMap", "value reduction_shift engine marking")
+CurveAbelMapKind1 = namedtuple(
+    "CurveAbelMapKind1", "value reduction_shift engine marking")
+CurveAbelMapKind2 = namedtuple(
+    "CurveAbelMapKind2", "value reduction_shift engine marking")
 CurveCheck = namedtuple("CurveCheck", "name value passed")
 CurveValidation = namedtuple(
     "CurveValidation", "kind passed maximum_residual checks")

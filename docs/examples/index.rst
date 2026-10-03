@@ -1,15 +1,17 @@
 Examples
 ========
 
-The examples connect Genera's public API to calculations from the mathematical
-literature. Each example has its own page with a walkthrough; the complete
-runnable programs remain in the repository's ``examples/`` directory.
+The examples illustrate curve geometry, period and Abel-map calculations,
+and applications of theta and Kleinian functions. Each page contains an
+executable calculation or a walkthrough of a complete program in the
+repository's ``examples/`` directory.
 
 .. toctree::
    :maxdepth: 2
 
    bernatska
    bobenko
+   bobenko_curve_data
    kovalevskaya_original
    manakov
    neumann_moser

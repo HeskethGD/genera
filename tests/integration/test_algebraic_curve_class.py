@@ -1,8 +1,8 @@
-from tests._support import make_curve
+from tests._support import make_curve, with_basis
 import warnings
 
 import genera
-from genera import Curve, CurveBranchLocus, algebraic_curve
+from genera import CurveBranchLocus, Curve
 from genera.curves._stages import _stage_hyperelliptic_periods
 from mpmath import mp
 
@@ -16,15 +16,18 @@ def test_unshipped_functional_curve_api_is_not_exported():
         "curve_lattice_reduce", "curve_chart", "curve_chart_monomial",
         "curve_chart_fibre", "curve_chart_place", "curve_chart_integral",
         "hyperelliptic_periods", "hyperelliptic_abel_map",
-        "hyperelliptic_data",
+        "hyperelliptic_data", "algebraic_curve",
+        "CurveFirstKindPeriods", "CurveSecondKindPeriods",
+        "CurveSecondKindAbelMap",
     )
     assert all(not hasattr(genera, name) for name in names)
 
 
-def test_algebraic_curve_context_factory_and_explicit_constructor():
+def test_curve_default_and_explicit_context_constructor():
     with mp.workdps(20):
-        curve = algebraic_curve((0, -1, 0, 1))
-        explicit = Curve(mp, (0, -1, 0, 1))
+        curve = Curve(polynomial={(0, 2): 1, (1, 0): 1, (3, 0): -1})
+        explicit = Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1}, ctx=mp)
+        assert curve.ctx is mp
         assert isinstance(curve, Curve)
         assert not hasattr(curve, "periods")
         assert curve.x_degree == explicit.x_degree == 3
@@ -37,7 +40,7 @@ def test_algebraic_curve_context_factory_and_explicit_constructor():
 def test_algebraic_curve_caches_specialized_period_bundle_safely():
     with mp.workdps(20):
         _stage_hyperelliptic_periods.cache_clear()
-        curve = algebraic_curve({
+        curve = Curve({
             (0, 2): 1,
             (1, 0): 1,
             (3, 0): -1,
@@ -59,7 +62,7 @@ def test_algebraic_curve_caches_specialized_period_bundle_safely():
 def test_second_kind_periods_privately_seed_first_kind_cache():
     with mp.workdps(20):
         _stage_hyperelliptic_periods.cache_clear()
-        curve = algebraic_curve((0, -1, 0, 1))
+        curve = Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1})
         second = curve.periods_kind_2()
         info = _stage_hyperelliptic_periods.cache_info()
         assert info.misses == 1
@@ -83,7 +86,7 @@ def test_algebraic_curve_path_and_integral_methods():
 
 def test_algebraic_curve_recomputes_after_precision_change_and_warns_once():
     with mp.workdps(15):
-        curve = make_curve(mp, (0, -1, 0, 1))
+        curve = make_curve(mp, {(0, 2): 1, (1, 0): 1, (3, 0): -1})
         first = curve.branch_locus
     with mp.workdps(30):
         with warnings.catch_warnings(record=True) as caught:
@@ -117,8 +120,7 @@ def test_automatic_trigonal_periods_match_supplied_basis():
             (0, 3): 1, (2, 0): -1, (1, 0): 1,
         })
         automatic = curve.periods_kind_1()
-        explicit = curve.periods_kind_1(
-            (lambda x, y: 1 / (3 * y**2),))
+        explicit = with_basis(curve, differentials_kind_1=(lambda x, y: 1 / (3 * y**2),)).periods_kind_1()
         assert automatic.engine == explicit.engine == "general"
         assert automatic.marking == explicit.marking == "geometric-polygon"
         assert automatic.differentials[0].numerator == (0, 0)
@@ -127,8 +129,7 @@ def test_automatic_trigonal_periods_match_supplied_basis():
         assert curve.validate(automatic).passed
         assert mp.norm(curve.riemann_matrix() - automatic.tau) < mp.mpf("1e-18")
         assert curve.validate(curve.riemann_constant()).passed
-        second = curve.periods_kind_2(
-            second_differentials=(lambda x, y: x / (3 * y**2),))
+        second = with_basis(curve, differentials_kind_2=(lambda x, y: x / (3 * y**2),)).periods_kind_2()
         assert curve.validate(second).passed
 
 
@@ -149,11 +150,11 @@ def test_klein_quartic_radial_order_and_automatic_periods():
         assert curve.validate(periods).passed
         assert periods.symmetry_residual < mp.mpf("1e-13")
         f_y = lambda x, y: x**3 + 3 * y**2
-        supplied = curve.periods_kind_1((
+        supplied = with_basis(curve, differentials_kind_1=(
             lambda x, y: 1 / f_y(x, y),
             lambda x, y: y / f_y(x, y),
             lambda x, y: x / f_y(x, y),
-        ))
+        )).periods_kind_1()
         # Automatic order is (1, x, y); the supplied basis is (1, y, x).
         reordered = mp.matrix([
             [supplied.omega[row, column] for column in range(3)]

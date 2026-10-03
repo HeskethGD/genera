@@ -612,7 +612,7 @@ def half_integer_deviation(values):
     return max(abs(2 * value - mp.nint(2 * value)) for value in values)
 
 
-def sigma_checks(curve, forms, place, data, kappa, characteristic, points):
+def sigma_checks(curve, place, data, kappa, characteristic, points):
     """Check that sigma is odd and vanishes on degree-two Abel divisors.
 
     The paper proves that the standard sigma function is odd and vanishes
@@ -631,7 +631,7 @@ def sigma_checks(curve, forms, place, data, kappa, characteristic, points):
     place_one = curve.fibre(x_one)[0]
     place_two = curve.fibre(x_two)[0]
     divisor = curve.abel_map_kind_1(
-        [place_one, place_two], forms, base_place=place)
+        [place_one, place_two], base_place=place).value
     sigma_on = kleinian_sigma(
         divisor, data.omega, data.tau, kappa, characteristic)
     offset = mp.matrix([
@@ -668,8 +668,10 @@ def run_curve(name, moduli, options):
     mu = {key: mp.mpf(value) for key, value in moduli.items()}
     namespace = SimpleNamespace(**mu)
     curve_spec = curve_terms(mu)
-    curve = Curve(mp, curve_spec)
     forms = first_kind_forms(mu)
+    second = purely_trigonal_second_kind(mu) if name == "purely-trigonal" else None
+    curve = Curve(curve_spec, ctx=mp, differentials_kind_1=forms,
+                  differentials_kind_2=second)
     print()
     print("=" * 72)
     print("curve:", name, "  moduli:",
@@ -690,12 +692,10 @@ def run_curve(name, moduli, options):
         print("FAIL: the curve is not a nonsingular trigonal genus-3 curve")
         return ["monodromy"]
 
-    data = curve.periods_kind_1(forms)
+    data = curve.periods_kind_1()
     second_data = None
     if name == "purely-trigonal":
-        second = purely_trigonal_second_kind(mu)
-        second_data = curve.periods_kind_2(
-            forms, second_differentials=second)
+        second_data = curve.periods_kind_2()
     validation = curve.validate(data)
     print("period validation passed:", validation.passed,
           "  maximum residual:", mp.nstr(validation.maximum_residual, 3))
@@ -719,7 +719,7 @@ def run_curve(name, moduli, options):
         failures.append("tau not positive definite")
 
     place = infinity_place(curve)
-    constant = curve.riemann_constant(forms, base_place=place)
+    constant = curve.riemann_constant(base_place=place)
     characteristic = constant.characteristic
     deviation = max(half_integer_deviation(characteristic[0]),
                     half_integer_deviation(characteristic[1]))
@@ -736,7 +736,7 @@ def run_curve(name, moduli, options):
     points = evaluation_points()
     zero_kappa = mp.zeros(3, 3)
     parity, divisor_ratio, divisor = sigma_checks(
-        curve, forms, place, data, zero_kappa, characteristic, points)
+        curve, place, data, zero_kappa, characteristic, points)
     print("sigma parity residual |sigma(u)+sigma(-u)|/|sigma(u)|:",
           mp.nstr(parity, 3))
     print("sigma on degree-two Abel divisor, |sigma(u_D)/sigma(u_D+w)|:",

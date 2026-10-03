@@ -19,6 +19,10 @@ ROOT = Path(__file__).parents[2]
         ("--steps", "40", "--samples", "5", "--stop", "0.2"),
     ),
     (
+        "examples.bobenko_reyman_semenov_tian_shansky.curve_data",
+        (),
+    ),
+    (
         "examples.kovalevskaya_original.kovalevskaya_original_demo",
         ("--stage", "demo", "--tol", "1e-5"),
     ),
@@ -31,6 +35,12 @@ ROOT = Path(__file__).parents[2]
         "examples.neumann_moser.neumann_moser_kleinian_demo",
         ("--dps", "20", "--steps", "40", "--samples", "5",
          "--start=-0.1", "--stop=0.1", "--phases", "0.13"),
+    ),
+    (
+        "examples.neumann_moser.neumann_moser_kleinian_demo",
+        ("--dps", "25", "--start=0", "--stop=0.1",
+         "--steps", "128", "--samples", "5", "--tol", "1e-8",
+         "--initial-state", "-1", "-2", "0.1", "0.2", "1", "-13.75", "-7"),
     ),
     (
         "examples.neumann_moser.neumann_moser_genus_three_demo",

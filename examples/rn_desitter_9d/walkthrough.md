@@ -147,7 +147,7 @@ Thus the two printed quotients serve different roles and are both correct. The d
 The curve data are constructed in one call:
 
 ```python
-curve = mp.algebraic_curve(p7)
+curve = Curve({(0, 2): 1, **{(i, 0): -c for i, c in enumerate(p7)}})
 first = curve.periods_kind_1()
 second = curve.periods_kind_2()
 omega, tau = first.omega, first.tau
@@ -160,7 +160,7 @@ Here `omega` is the first-kind **half-period** matrix; the complete periods are 
 For each orbit, `curve.abel_map_kind_1` computes the reduced Abel image of its starting branch point:
 
 ```python
-start = curve.abel_map_kind_1((x_start, 0), reduce=True)
+start = curve.abel_map_kind_1((x_start, 0), reduce=True).value
 ```
 
 The branch-point identities provide a sensitive convention check:

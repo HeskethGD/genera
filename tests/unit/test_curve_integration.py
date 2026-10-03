@@ -1,4 +1,4 @@
-from tests._support import make_curve
+from tests._support import make_curve, with_basis
 import pytest
 
 import genera.curves.jacobian as curve_jacobian
@@ -98,7 +98,7 @@ def test_first_kind_abel_map_uses_geometry_quadrature(monkeypatch):
         monkeypatch.setattr(
             curve_jacobian, "_integrate_plane_curve_path",
             recording_integral)
-        curve.abel_map_kind_1(target)
+        curve.abel_map_kind_1(target).value
         assert calls
         assert all(order == "geometry" and branches
                    for order, branches in calls)
@@ -122,9 +122,7 @@ def test_second_kind_abel_map_checks_geometry_quadrature(monkeypatch):
         monkeypatch.setattr(
             curve_jacobian, "_integrate_plane_curve_path",
             recording_integral)
-        curve.abel_map_kind_2(
-            target,
-            second_differentials=(lambda x, y: x / (3 * y**2),))
+        with_basis(curve, differentials_kind_2=(lambda x, y: x / (3 * y**2),)).abel_map_kind_2(target)
         assert calls
         assert all(order == "geometry" and branches and checked
                    for order, branches, checked in calls)
