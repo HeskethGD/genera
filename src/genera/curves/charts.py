@@ -29,31 +29,10 @@ def _identity_chart_coordinates(t, w):
 
 
 def _prepare_chart_curve(ctx, curve):
-    """Prepare a general ``(t, w)`` curve from sparse input or terms.
-
-    Ascending coefficient sequences are deliberately rejected: unlike the
-    public curve input they cannot express a general chart curve.
-    """
-    if hasattr(curve, "items"):
-        return _prepare_plane_curve(ctx, curve)
-    try:
-        values = tuple(curve)
-    except TypeError:
-        raise ValueError("chart curves must be sparse plane terms")
-    if not values:
-        raise ValueError("chart curves must not be empty")
-    if all(isinstance(term, (tuple, list)) and len(term) == 3
-           for term in values):
-        terms = {}
-        for x_power, y_power, coefficient in values:
-            try:
-                coefficient = ctx.convert(coefficient)
-            except (TypeError, ValueError):
-                raise ValueError("polynomial coefficients must be numbers")
-            key = (x_power, y_power)
-            terms[key] = terms.get(key, ctx.zero) + coefficient
-        return _prepare_plane_curve(ctx, terms)
-    raise ValueError("chart curves must be sparse plane terms")
+    """Prepare a chart polynomial from a sparse mapping."""
+    if not hasattr(curve, "items"):
+        raise ValueError("chart polynomial must be a sparse mapping")
+    return _prepare_plane_curve(ctx, curve)
 
 
 def _curve_chart_source(ctx, source):

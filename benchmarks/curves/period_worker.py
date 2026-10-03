@@ -44,14 +44,14 @@ def run(request):
     # Only the genera worker adds the checkout to its import path.
     sys.path.insert(0, str(Path(request['repo'])/'src'))
     import genera
-    from genera import algebraic_curve
+    from genera import Curve
     from mpmath import mp
     mp.prec = bits
     genera_path = Path(genera.__file__).resolve()
     if not genera_path.is_relative_to(Path(request['repo']).resolve()):
         raise RuntimeError('genera worker imported the wrong checkout')
     with mp.workprec(53):
-        algebraic_curve((0,-1,0,1)).periods_kind_1()
+        Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1}).periods_kind_1()
     from genera.curves import _stages
     for stage in vars(_stages).values():
         if callable(stage) and hasattr(stage,'cache_clear'):
@@ -60,7 +60,7 @@ def run(request):
         return mp.fsum(mp.mpf(c)*x**i*y**j for i,j,c in terms)
     tick = time.perf_counter()
     terms = {(i,j):mp.mpf(c) for i,j,c in case['terms']}
-    curve = algebraic_curve(terms)
+    curve = Curve(terms)
     supplied = case.get('numerators')
     forms = None
     if supplied is not None:

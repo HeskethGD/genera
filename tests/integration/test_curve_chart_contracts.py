@@ -13,16 +13,19 @@ from mpmath import mp
 TERMS = {(0, 2): 1, (1, 0): -1}
 
 
-@pytest.mark.parametrize("specification,message", [
-    (None, "sparse plane terms"),
-    ((), "must not be empty"),
-    ((0, -1, 1), "sparse plane terms"),
-    (((0, 2, "invalid"),), "coefficients must be numbers"),
+@pytest.mark.parametrize("polynomial,message", [
+    (None, "sparse mapping"),
+    ((), "sparse mapping"),
+    (((0, 2, 1), (1, 0, -1)), "sparse mapping"),
+    ({}, "must be nonzero"),
+    ({(0, 2): "invalid"}, "coefficients must be numbers"),
+    ((0, -1, 1), "sparse mapping"),
+    (((0, 2, "invalid"),), "sparse mapping"),
 ])
-def test_chart_rejects_invalid_specification(specification, message):
+def test_chart_rejects_invalid_polynomial(polynomial, message):
     curve = make_curve(mp, TERMS)
     with pytest.raises(ValueError, match=message):
-        curve.chart(specification, lambda t, w: (t, w, 1))
+        curve.chart(polynomial, lambda t, w: (t, w, 1))
 
 
 def test_chart_requires_a_callable_coordinate_map():
@@ -112,7 +115,14 @@ def test_chart_place_cannot_cross_precision_contexts():
     curve = make_curve(ctx, {(0, 2): 1, (3, 0): -1, (1, 0): 1})
     chart = curve.monomial_chart(-2, -3)
     place = curve.chart_place(chart, 1, ctx.mpf('.1'))
-    prepared = _prepare_plane_curve(ctx, curve.specification)
+    prepared = _prepare_plane_curve(ctx, curve.polynomial)
     with ctx.workdps(25):
         with pytest.raises(ValueError, match="different curve or precision"):
             _normalize_curve_endpoint(ctx, prepared, place, "target")
+
+
+@pytest.mark.parametrize("source", [(0, -1, 0, 1), ((0, 2, 1), (3, 0, -1))])
+def test_monomial_chart_rejects_legacy_polynomial_sources(source):
+    curve = make_curve(mp, TERMS)
+    with pytest.raises(ValueError, match="sparse mapping"):
+        curve.monomial_chart(-2, -3, source=source)

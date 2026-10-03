@@ -6,7 +6,7 @@ from mpmath import mp
 from genera import rtheta
 from genera.curves import _operations
 from genera.curves.algebraic_curve import CurvePlace
-from tests._support import make_curve
+from tests._support import make_curve, with_basis
 
 TERMS = {(0, 3): 1, (4, 0): -1, (1, 0): 1, (0, 0): -1}
 
@@ -34,11 +34,11 @@ def test_geometric_interface_keeps_one_marking(monkeypatch):
     assert periods.omega[0, 0] == original
     target = curve.fibre(ctx.mpc('.3', '.7'))[0]
     base = curve.fibre(ctx.mpc('.4', '.8'))[-1]
-    value = curve.abel_map_kind_1([target, target], base_place=base)
-    assert ctx.norm(value - 2*curve.abel_map_kind_1(target, base_place=base)) < ctx.mpf('1e-16')
-    assert ctx.norm(curve.abel_map_kind_1([])) == 0
-    assert ctx.norm(curve.abel_map_kind_1(base, base_place=base)) == 0
-    reduced = curve.abel_map_kind_1([target, target], base_place=base, reduce=True)
+    value = curve.abel_map_kind_1([target, target], base_place=base).value
+    assert ctx.norm(value - 2*curve.abel_map_kind_1(target, base_place=base).value) < ctx.mpf('1e-16')
+    assert ctx.norm(curve.abel_map_kind_1([]).value) == 0
+    assert ctx.norm(curve.abel_map_kind_1(base, base_place=base).value) == 0
+    reduced = curve.abel_map_kind_1([target, target], base_place=base, reduce=True).value
     assert ctx.norm(reduced-curve.lattice_reduce(value, periods).value) < ctx.mpf('1e-16')
     constant = curve.riemann_constant(base_place=base)
     argument = (2*periods.omega)**-1 * value + constant.value
@@ -58,10 +58,10 @@ def test_geometric_unsupported_operations_are_explicit():
     curve = make_curve(ctx, TERMS)
     forms = (lambda x, y: 1,)
     for operation in (
-        lambda: curve.periods_kind_1(forms),
-        lambda: curve.riemann_matrix(forms),
-        lambda: curve.riemann_constant(forms),
-        lambda: curve.abel_map_kind_1([], forms),
+        lambda: with_basis(curve, differentials_kind_1=forms).periods_kind_1(),
+        lambda: with_basis(curve, differentials_kind_1=forms).riemann_matrix(),
+        lambda: with_basis(curve, differentials_kind_1=forms).riemann_constant(),
+        lambda: with_basis(curve, differentials_kind_1=forms).abel_map_kind_1([]).value,
     ):
         with pytest.raises(ValueError, match="one form per positive genus"):
             operation()
@@ -69,12 +69,12 @@ def test_geometric_unsupported_operations_are_explicit():
         lambda: curve.periods_kind_2(),
         lambda: curve.abel_map_kind_2([]),
     ):
-        with pytest.raises(ValueError, match='require second_differentials'):
+        with pytest.raises(ValueError, match='Construct Curve.*differentials_kind_2'):
             operation()
     chart_place = CurvePlace(0, 1, object())
     for operation in (
-        lambda: curve.abel_map_kind_1(chart_place),
-        lambda: curve.abel_map_kind_1([], base_place=chart_place),
+        lambda: curve.abel_map_kind_1(chart_place).value,
+        lambda: curve.abel_map_kind_1([], base_place=chart_place).value,
         lambda: curve.riemann_constant(base_place=chart_place),
     ):
         with pytest.raises(ValueError, match='invalid chart description'):
@@ -98,9 +98,9 @@ def test_hyperelliptic_automatic_dispatch_stays_specialized(monkeypatch):
                    curve.homology, curve.riemann_constant()):
         assert result.engine == 'hyperelliptic'
         assert result.marking == 'baker'
-    default = make_curve(ctx, (0, -1, 0, 1))
+    default = make_curve(ctx, {(0, 2): 1, (1, 0): 1, (3, 0): -1})
     point = (ctx.mpf(2), ctx.sqrt(6))
-    assert ctx.norm(curve.abel_map_kind_1(point)-default.abel_map_kind_1(point)) == 0
+    assert ctx.norm(curve.abel_map_kind_1(point).value-default.abel_map_kind_1(point).value) == 0
 
 
 def test_constructors_agree_and_monodromy_remains_diagnostic():
@@ -109,14 +109,14 @@ def test_constructors_agree_and_monodromy_remains_diagnostic():
     ctx.dps = 18
     terms = {(0, 3): 1, (3, 0): 1, (0, 0): -1}
     default = make_curve(ctx, terms)
-    direct = Curve(ctx, terms)
+    direct = Curve(terms, ctx=ctx)
     assert default.periods_kind_1().marking == 'geometric-polygon'
     assert ctx.norm(default.riemann_matrix()-direct.riemann_matrix()) == 0
     assert default.monodromy == direct.monodromy
     assert default.validate(default.monodromy).passed
     constructors = (
         lambda t, **kw: make_curve(ctx, t, **kw),
-        lambda t, **kw: Curve(ctx, t, **kw),
+        lambda t, **kw: Curve(t, **kw, ctx=ctx),
     )
     for constructor in constructors:
         with pytest.raises(TypeError, match='_general_backend'):
@@ -138,33 +138,33 @@ def test_geometric_chart_endpoints_cutoffs_and_theta():
     for chart, seed in ((infinity, ctx.one), (branch, ctx.root(4, 3))):
         outer = curve.chart_place(chart, seed, ctx.mpf('.3'))
         inner = curve.chart_place(chart, seed, ctx.mpf('.25'))
-        first = curve.abel_map_kind_1(outer)
-        second = curve.abel_map_kind_1(inner)
+        first = curve.abel_map_kind_1(outer).value
+        second = curve.abel_map_kind_1(inner).value
         # Independently chosen open paths can differ by a period.
         difference = curve.lattice_reduce(first-second, periods).value
         assert ctx.norm(difference) < ctx.mpf('1e-14')
         local = curve.chart_integral(
             chart, periods.differentials, (0, ctx.mpf('.3')), seed)
-        junction = curve.abel_map_kind_1((outer.x, outer.y))
+        junction = curve.abel_map_kind_1((outer.x, outer.y)).value
         assert ctx.norm(first-junction+ctx.matrix(local.values)) < ctx.mpf('1e-14')
         places.append(outer)
     constant = curve.riemann_constant()
     # g=3: the divisor consists of one ramification point and infinity.
-    argument = inverse*curve.abel_map_kind_1(places) + constant.value
+    argument = inverse*curve.abel_map_kind_1(places).value + constant.value
     reduced = curve.lattice_reduce(argument, tau).value
     assert abs(rtheta(reduced, tau, ctx=ctx)) < ctx.mpf('1e-11')
     shifted = curve.riemann_constant(base_place=places[0])
-    argument = inverse*curve.abel_map_kind_1(places, base_place=places[0])+shifted.value
+    argument = inverse*curve.abel_map_kind_1(places, base_place=places[0]).value+shifted.value
     reduced = curve.lattice_reduce(argument, tau).value
     assert abs(rtheta(reduced, tau, ctx=ctx)) < ctx.mpf('1e-11')
-    assert ctx.norm(curve.abel_map_kind_1(places[0], base_place=places[0])) == 0
+    assert ctx.norm(curve.abel_map_kind_1(places[0], base_place=places[0]).value) == 0
     other = make_curve(ctx, TERMS)
     with pytest.raises(ValueError, match='different curve or precision'):
-        other.abel_map_kind_1(places[0])
+        other.abel_map_kind_1(places[0]).value
     with ctx.workdps(23):
         with pytest.warns(UserWarning, match='context changed'):
             with pytest.raises(ValueError, match='different curve or precision'):
-                curve.abel_map_kind_1(places[0])
+                curve.abel_map_kind_1(places[0]).value
     assert ctx.dps == 18
 
 
@@ -176,10 +176,10 @@ def test_geometric_supplied_basis_is_coherent_across_operations(monkeypatch):
     automatic = curve.periods_kind_1()
     constant = curve.riemann_constant()
     point = curve.fibre(ctx.mpc('.3', '.7'))[0]
-    automatic_value = curve.abel_map_kind_1(point)
+    automatic_value = curve.abel_map_kind_1(point).value
     chart = curve.monomial_chart(-3, -4)
     infinity = curve.chart_place(chart, 1, ctx.mpf('.3'))
-    automatic_infinity = curve.abel_map_kind_1(infinity)
+    automatic_infinity = curve.abel_map_kind_1(infinity).value
     change = ctx.matrix([[2, 1, 0], [0, 1, 1], [1, 0, 1]])
 
     class Form:
@@ -197,23 +197,23 @@ def test_geometric_supplied_basis_is_coherent_across_operations(monkeypatch):
 
     monkeypatch.setattr(_stages, '_stage_geometric_periods_working', automatic_forbidden)
     monkeypatch.setattr(_operations, '_stage_monodromy', automatic_forbidden)
-    supplied = curve.periods_kind_1(forms)
+    supplied = with_basis(curve, differentials_kind_1=forms).periods_kind_1()
     assert supplied.differentials == forms
     assert supplied.marking == 'geometric-polygon'
     assert ctx.norm(supplied.omega-change*automatic.omega) < ctx.mpf('1e-15')
     assert ctx.norm(supplied.omega_prime-change*automatic.omega_prime) < ctx.mpf('1e-15')
     assert ctx.norm(supplied.tau-automatic.tau) < ctx.mpf('1e-15')
-    assert ctx.norm(curve.riemann_constant(forms).value-constant.value) < ctx.mpf('1e-14')
-    value = curve.abel_map_kind_1(point, forms)
+    assert ctx.norm(with_basis(curve, differentials_kind_1=forms).riemann_constant().value-constant.value) < ctx.mpf('1e-14')
+    value = with_basis(curve, differentials_kind_1=forms).abel_map_kind_1(point).value
     assert ctx.norm(value-change*automatic_value) < ctx.mpf('1e-15')
-    chart_value = curve.abel_map_kind_1(infinity, forms)
+    chart_value = with_basis(curve, differentials_kind_1=forms).abel_map_kind_1(infinity).value
     assert ctx.norm(chart_value-change*automatic_infinity) < ctx.mpf('1e-14')
-    based = curve.abel_map_kind_1(point, forms, base_place=infinity)
+    based = with_basis(curve, differentials_kind_1=forms).abel_map_kind_1(point, base_place=infinity).value
     assert ctx.norm(based-(value-chart_value)) < ctx.mpf('1e-14')
-    shifted = curve.riemann_constant(forms, base_place=infinity)
+    shifted = with_basis(curve, differentials_kind_1=forms).riemann_constant(base_place=infinity)
     expected = constant.value+2*((2*supplied.omega)**-1*chart_value)
     assert ctx.norm(shifted.value-expected) < ctx.mpf('1e-14')
-    reduced = curve.abel_map_kind_1(point, forms, reduce=True)
+    reduced = with_basis(curve, differentials_kind_1=forms).abel_map_kind_1(point, reduce=True).value
     assert ctx.norm(reduced-curve.lattice_reduce(value, supplied).value) < ctx.mpf('1e-14')
 
 
@@ -229,7 +229,7 @@ def test_geometric_supplied_basis_accepts_unhashable_forms():
             return 1/y
 
     form = Form()
-    periods = curve.periods_kind_1((form,))
+    periods = with_basis(curve, differentials_kind_1=(form,)).periods_kind_1()
     assert periods.differentials == (form,)
     assert periods.marking == 'geometric-polygon'
     assert curve.validate(periods).passed
@@ -245,7 +245,7 @@ def test_hyperelliptic_supplied_forms_use_geometric_marking(linear_y):
     curve = make_curve(ctx, terms)
     forms = (lambda x,y: 1/(y+x if linear_y else y),)
     baker = curve.periods_kind_1()
-    general = curve.periods_kind_1(forms)
+    general = with_basis(curve, differentials_kind_1=forms).periods_kind_1()
     assert baker.marking == curve.homology.marking == 'baker'
     assert general.marking == 'geometric-polygon'
     assert curve.validate(general).passed
@@ -260,19 +260,18 @@ def test_hyperelliptic_supplied_forms_use_geometric_marking(linear_y):
     assert ctx.norm(a*change-b) < ctx.mpf('1e-17')
     base = (ctx.mpf(2),ctx.sqrt(6)-(2 if linear_y else 0))
     target = (ctx.mpf(3),ctx.sqrt(24)-(3 if linear_y else 0))
-    value = curve.abel_map_kind_1(target,forms,base_place=base)
+    value = with_basis(curve, differentials_kind_1=forms).abel_map_kind_1(target, base_place=base).value
     expected = ctx.quad(lambda x:1/ctx.sqrt(x**3-x),[2,3])
     assert abs(value[0]-expected) < ctx.mpf('1e-17')
-    constant = curve.riemann_constant(forms,base_place=base)
+    constant = with_basis(curve, differentials_kind_1=forms).riemann_constant(base_place=base)
     assert constant.marking == general.marking
     assert abs(rtheta(
         constant.value, general.tau, ctx=ctx)) < ctx.mpf('1e-16')
     second = (lambda x,y: 1,)
-    periods = curve.periods_kind_2(forms,second_differentials=second)
+    periods = with_basis(curve, differentials_kind_1=forms, differentials_kind_2=second).periods_kind_2()
     assert periods.marking == general.marking
     assert ctx.norm(periods.eta)+ctx.norm(periods.eta_prime) < ctx.mpf('1e-17')
-    integral = curve.abel_map_kind_2(target,forms,second_differentials=second,
-                                         base_place=base,reduce=True)
+    integral = with_basis(curve, differentials_kind_1=forms, differentials_kind_2=second).abel_map_kind_2(target, base_place=base, reduce=True)
     assert integral.marking == general.marking
     assert abs(integral.value[0]-1) < ctx.mpf('1e-17')
     assert curve.periods_kind_1().marking == 'baker'

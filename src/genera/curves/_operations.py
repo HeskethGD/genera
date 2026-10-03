@@ -7,7 +7,7 @@ from ._hyperelliptic.model import _normalize_abel_targets
 from ._records import (
     CurveBranchLocus,
     CurveCheck,
-    CurveFirstKindPeriods,
+    CurvePeriodsKind1,
     CurveGenus,
     CurveHomology,
     CurveIntegral,
@@ -16,8 +16,9 @@ from ._records import (
     CurvePath,
     CurvePlace,
     CurveRiemannConstant,
-    CurveSecondKindAbelMap,
-    CurveSecondKindPeriods,
+    CurveAbelMapKind1,
+    CurveAbelMapKind2,
+    CurvePeriodsKind2,
     CurveValidation,
 )
 from ._stages import (
@@ -68,12 +69,12 @@ def _geometric_second_forms(second_kind, second_differentials):
     if second_kind and second_differentials is None:
         raise ValueError("second-kind operations require second_differentials")
     return (() if second_differentials is None else
-            _curve_differential_sequence(second_differentials, "second_differentials"))
+            _curve_differential_sequence(second_differentials, "differentials_kind_2"))
 
 
 def _geometric_second_kind_periods(ctx, prepared, first, forms):
     if len(forms) != first.genus:
-        raise ValueError("second_differentials must contain one form per genus")
+        raise ValueError("differentials_kind_2 must contain one form per genus")
     data = _stage_geometric_custom_periods(ctx, (prepared, forms))
     full = _period_matrix_from_columns(ctx, data.columns, 0, first.genus, first.genus)
     # The supplied forms are dr, while the public half-period convention is
@@ -82,7 +83,7 @@ def _geometric_second_kind_periods(ctx, prepared, first, forms):
     # asymmetry in kappa.
     eta, eta_prime = -full[:, :first.genus]/2, -full[:, first.genus:]/2
     raw_kappa = eta * first.omega**-1
-    return CurveSecondKindPeriods(
+    return CurvePeriodsKind2(
         first.genus, forms, eta, eta_prime, (raw_kappa+raw_kappa.T)/2,
         ctx.norm(raw_kappa-raw_kappa.T), data.max_sheet_residual,
         "general", "geometric-polygon")
@@ -101,7 +102,7 @@ def _geometric_first_kind_periods(ctx, prepared, forms=None):
         raise ValueError("normalized period matrix is not positive definite")
     if forms is None:
         forms = tuple(_baker_callable(ctx, data.basis, i) for i in range(genus))
-    return CurveFirstKindPeriods(
+    return CurvePeriodsKind1(
         genus, forms, omega, omega_prime, tau, ctx.norm(raw_tau - raw_tau.T),
         eigenvalues, data.max_sheet_residual, "general", "geometric-polygon")
 
@@ -218,13 +219,13 @@ def periods(ctx, curve, differentials=None, *, second_kind=False,
             eta = eta_prime = kappa = None
             kappa_symmetry_residual = None
         genus = omega.rows
-        first_record = CurveFirstKindPeriods(
+        first_record = CurvePeriodsKind1(
             genus, None, omega, omega_prime, tau,
             ctx.norm(tau - tau.T),
             _tau_imaginary_eigenvalues(ctx, tau), None,
             "hyperelliptic", "baker")
         if second_kind:
-            second_record = CurveSecondKindPeriods(
+            second_record = CurvePeriodsKind2(
                 genus, None, eta, eta_prime, kappa,
                 kappa_symmetry_residual, None,
                 "hyperelliptic", "baker")
@@ -236,7 +237,7 @@ def periods(ctx, curve, differentials=None, *, second_kind=False,
 
     second_forms = _geometric_second_forms(second_kind, second_differentials)
     forms = (None if differentials is None else
-             _curve_differential_sequence(differentials, "differentials"))
+             _curve_differential_sequence(differentials, "differentials_kind_1"))
     first = _geometric_first_kind_periods(ctx, prepared, forms)
     if second_forms:
         second = _geometric_second_kind_periods(ctx, prepared, first, second_forms)
@@ -270,7 +271,7 @@ def riemann_constant(ctx, curve, differentials=None, *,
             # Thus theta(A_P(D) + K_P) keeps the same argument when
             # K_P = K_Q + (g-1) A_Q(P). The Abel map below supplies A_Q(P).
             displacement = abel_map(
-                ctx, curve, base_place, differentials=None)
+                ctx, curve, base_place, differentials=None).value
             value += (genus - 1) * ((2 * omega) ** -1 * displacement)
         characteristic = _jacobian_characteristic(ctx, value, tau)
         return CurveRiemannConstant(
@@ -279,7 +280,7 @@ def riemann_constant(ctx, curve, differentials=None, *,
 
 
     forms = (None if differentials is None else
-             _curve_differential_sequence(differentials, "differentials"))
+             _curve_differential_sequence(differentials, "differentials_kind_1"))
     data = _geometric_first_kind_periods(ctx, prepared, forms)
     entries, cycles = (_stage_geometric_riemann_constant(ctx, prepared)
                       if forms is None else
@@ -288,7 +289,7 @@ def riemann_constant(ctx, curve, differentials=None, *,
     if base_place is not None:
         # A_P(D) = A_Q(D) - (g-1) A_Q(P); our additive theta shift gains
         # the same (g-1) A_Q(P) so its vanishing divisor is unchanged.
-        displacement = abel_map(ctx, curve, base_place, forms)
+        displacement = abel_map(ctx, curve, base_place, forms).value
         value += (data.genus - 1) * ((2 * data.omega) ** -1 * displacement)
     return CurveRiemannConstant(
         value, _jacobian_characteristic(ctx, value, data.tau), base_place,
@@ -362,7 +363,7 @@ def validate(ctx, result):
             "cycle_count", result.cycle_count,
             result.cycle_count == result.intersection_rank
             + result.radical_rank))
-    elif isinstance(result, CurveFirstKindPeriods):
+    elif isinstance(result, CurvePeriodsKind1):
         tau = result.tau
         scale = max([ctx.one] + [
             abs(tau[row, column]) for row in range(tau.rows)
@@ -382,7 +383,7 @@ def validate(ctx, result):
             checks.append(CurveCheck(
                 "max_sheet_residual", result.max_sheet_residual,
                 result.max_sheet_residual <= tolerance))
-    elif isinstance(result, CurveSecondKindPeriods):
+    elif isinstance(result, CurvePeriodsKind2):
         kappa = result.kappa
         kappa_scale = max([ctx.one] + [
             abs(kappa[row, column]) for row in range(kappa.rows)
@@ -573,7 +574,7 @@ def abel_map(ctx, curve, target, differentials=None, *, second_kind=False,
     if hyperelliptic_model is not None and differentials is None:
         if second_differentials is not None:
             raise ValueError(
-                "second_differentials require a supplied first-kind basis")
+                "differentials_kind_2 require a supplied first-kind basis")
         if (_curve_contains_chart_place(target)
                 or (base_place is not None
                     and _curve_contains_chart_place(base_place))):
@@ -587,16 +588,17 @@ def abel_map(ctx, curve, target, differentials=None, *, second_kind=False,
             result = _hyperelliptic_abel_map(
                 ctx, hyperelliptic_model.coefficients, transformed_targets,
                 reduce=reduce, second_kind=second_kind,
-                _return_shift=second_kind and reduce)
+                _return_shift=reduce)
             if second_kind:
                 second = result[1]
                 if reduce:
                     shift = result[-1] if len(result) == 3 else None
                 else:
                     shift = None
-                return CurveSecondKindAbelMap(
+                return CurveAbelMapKind2(
                     second, shift, "hyperelliptic", "baker")
-            return result
+            value, shift = result if reduce else (result, None)
+            return CurveAbelMapKind1(value, shift, "hyperelliptic", "baker")
         base_points = _normalize_abel_targets(ctx, base_place)
         if len(base_points) != 1:
             raise ValueError("base_place must be one affine point (x, y)")
@@ -618,18 +620,19 @@ def abel_map(ctx, curve, target, differentials=None, *, second_kind=False,
                     ctx, curve, second_kind=True)
                 second, shift = _reduce_second_kind_abel(
                     ctx, first, second, first_periods, second_periods)
-            return CurveSecondKindAbelMap(
+            return CurveAbelMapKind2(
                 second, shift, "hyperelliptic", "baker")
         result = target_result - len(targets) * base_result
+        shift = None
         if reduce:
-            result = lattice_reduce(
-                ctx, result, periods(ctx, curve)).value
-        return result
+            reduced = lattice_reduce(ctx, result, periods(ctx, curve))
+            result, shift = reduced
+        return CurveAbelMapKind1(result, shift, "hyperelliptic", "baker")
 
 
     second_forms = _geometric_second_forms(second_kind, second_differentials)
     forms = (None if differentials is None else
-             _curve_differential_sequence(differentials, "differentials"))
+             _curve_differential_sequence(differentials, "differentials_kind_1"))
     places = _normalize_curve_places(ctx, prepared, target)
     result = ctx.matrix(_geometric_abel_divisor(
         ctx, prepared, tuple(place for junction, tail, place in places),
@@ -644,15 +647,17 @@ def abel_map(ctx, curve, target, differentials=None, *, second_kind=False,
                 ctx, prepared, first_periods, second_forms)
             second, shift = _reduce_second_kind_abel(
                 ctx, first, second, first_periods, second_periods)
-        return CurveSecondKindAbelMap(second, shift, "general", "geometric-polygon")
+        return CurveAbelMapKind2(second, shift, "general", "geometric-polygon")
+    shift = None
     if reduce:
-        result = lattice_reduce(ctx, result, periods(ctx, curve, forms)).value
-    return result
+        reduced = lattice_reduce(ctx, result, periods(ctx, curve, forms))
+        result, shift = reduced
+    return CurveAbelMapKind1(result, shift, "general", "geometric-polygon")
 
 
 def lattice_reduce(ctx, value, periods):
     """Implement :meth:`Curve.lattice_reduce`."""
-    if isinstance(periods, CurveFirstKindPeriods):
+    if isinstance(periods, CurvePeriodsKind1):
         genus = periods.genus
         period_matrix = ctx.matrix(genus, 2 * genus)
         period_matrix[:, :genus] = 2 * periods.omega
@@ -662,10 +667,10 @@ def lattice_reduce(ctx, value, periods):
             tau = ctx.matrix(periods)
         except (TypeError, ValueError):
             raise ValueError(
-                "periods must be square or a CurveFirstKindPeriods record")
+                "periods must be square or a CurvePeriodsKind1 record")
         if tau.rows != tau.cols:
             raise ValueError(
-                "periods must be square or a CurveFirstKindPeriods record")
+                "periods must be square or a CurvePeriodsKind1 record")
         genus = tau.rows
         period_matrix = ctx.matrix(genus, 2 * genus)
         period_matrix[:, :genus] = ctx.eye(genus)

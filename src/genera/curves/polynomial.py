@@ -161,7 +161,7 @@ def _prepare_plane_curve(ctx, coefficients):
 
     ``coefficients`` maps ``(x_power, y_power)`` pairs to numeric
     coefficients. The prepared representation is private; the public
-    constructor accepts sparse mappings and coefficient sequences.
+    constructor accepts sparse mappings only.
     """
     try:
         items = coefficients.items()

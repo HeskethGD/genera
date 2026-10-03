@@ -1,6 +1,6 @@
 """Nonmonic projection regressions for the geometric backend."""
 
-from tests._support import make_curve
+from tests._support import make_curve, with_basis
 import pytest
 from mpmath import mp
 
@@ -34,7 +34,7 @@ def test_geometric_nonmonic_elliptic_matches_monic_model():
     assert curve.genus_data == (1, 2, 4)
     assert curve.validate(periods).passed
     monic = make_curve(ctx, {(0, 2): 1, (3, 0): -1, (1, 0): -1})
-    reference = monic.periods_kind_1((lambda x, w: 1/(2*w),))
+    reference = with_basis(monic, differentials_kind_1=(lambda x, w: 1/(2*w),)).periods_kind_1()
     _same_lattice(ctx, _full(ctx, periods), _full(ctx, reference))
 
 
@@ -50,7 +50,7 @@ def test_geometric_kovalevskaya_supplied_basis_converges_with_precision():
     for digits in (18, 25):
         ctx.dps = digits
         curve = make_curve(ctx, terms)
-        periods = curve.periods_kind_1(forms)
+        periods = with_basis(curve, differentials_kind_1=forms).periods_kind_1()
         assert curve.genus_data == (3, 4, 12)
         assert curve.validate(periods).passed
         records.append(_full(ctx, periods))

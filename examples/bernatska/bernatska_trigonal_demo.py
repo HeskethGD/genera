@@ -193,13 +193,11 @@ class BernatskaValidation:
 
 
 def _compute_example(verbose=False):
-    curve = Curve(mp, trigonal_curve())
     first_kind, second_kind = differentials()
-    first_data = curve.periods_kind_1(first_kind)
-    second_data = curve.periods_kind_2(
-        differentials=first_kind,
-        second_differentials=second_kind,
-    )
+    curve = Curve(trigonal_curve(), ctx=mp, differentials_kind_1=first_kind,
+                  differentials_kind_2=second_kind)
+    first_data = curve.periods_kind_1()
+    second_data = curve.periods_kind_2()
     points = curve.branch_locus.branch_values
     monodromy = curve.monodromy
     permutations = tuple(reversed(monodromy.permutations)) + (

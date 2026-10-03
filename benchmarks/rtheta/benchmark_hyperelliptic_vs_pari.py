@@ -207,10 +207,10 @@ def benchmark(args):
                     mp.mpf(value.numerator) / value.denominator
                     for value in coefficients_exact]
                 def mpmath_period_data():
-                    from genera import algebraic_curve
+                    from genera import Curve
                     _stage_hyperelliptic_periods.cache_clear()
-                    return algebraic_curve(
-                        coefficients).periods_kind_1()
+                    return Curve(
+                        {(0, 2): 1, **{(i, 0): -c for i, c in enumerate(coefficients)}}).periods_kind_1()
 
                 # Warm up root finding and quadrature allocation paths.
                 mpmath_period_data()

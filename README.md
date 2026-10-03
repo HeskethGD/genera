@@ -13,9 +13,9 @@ Genera retains the applicable BSD-3-Clause copyright and licence notice.
 Example usage:
 
 ```python
-from genera import algebraic_curve, kleinian_sigma, rtheta
+from genera import Curve, kleinian_sigma, rtheta
 
-curve = algebraic_curve((0, -1, 0, 1))
+curve = Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1})
 print(curve.genus)
 ```
 

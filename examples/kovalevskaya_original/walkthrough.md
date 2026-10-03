@@ -118,7 +118,7 @@ $\wp(w) = -l_1$ (see "Conventions").
 
 ## What Genera provides
 
-* `mp.algebraic_curve(coefficients)` -- the genus-2 hyperelliptic curve
+* `Curve({(0, 2): 1, **{(i, 0): -c for i, c in enumerate(coefficients)}})` -- the genus-2 hyperelliptic curve
   from the ascending coefficients of $y^2 = R_1(s)$: genus, branch
   locus (matches the five memoir roots to $8\cdot10^{-31}$).
 * `curve.periods_kind_1()` -- $\omega$, $\omega'$ and the Riemann

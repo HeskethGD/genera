@@ -32,6 +32,8 @@ The independent variable :math:`x` is the stationary coordinate. Writing
      -\frac{a_1q_1^2+a_2q_2^2}{2}
      +\frac12\left(\frac{C_1^2}{q_1^2}+\frac{C_2^2}{q_2^2}\right).
 
+.. _manakov-period-data:
+
 The spectral curve and compatible periods
 -----------------------------------------
 
@@ -53,9 +55,9 @@ with marked parameters :math:`a_1=3/4`, :math:`a_2=3/16`, and
 The runnable script expands :math:`F` into ascending polynomial
 coefficients. Its period construction uses one curve object throughout::
 
-   from genera import algebraic_curve, kleinian_p
+   from genera import Curve, kleinian_p
 
-   curve = algebraic_curve(coefficients)
+   curve = Curve({(0, 2): 1, **{(i, 0): -c for i, c in enumerate(coefficients)}})
    first = curve.periods_kind_1()
    second = curve.periods_kind_2()
    omega, tau = first.omega, first.tau
@@ -65,6 +67,8 @@ coefficients. Its period construction uses one curve object throughout::
 These are mutually compatible half-periods, normalized periods,
 second-kind data and a theta characteristic. Reusing them avoids computing
 periods again at each point of the trajectory.
+
+.. _manakov-kleinian-example:
 
 The Kleinian solution
 ----------------------
@@ -141,7 +145,7 @@ give the divisor's first coordinates; their sheets are fixed by
 :math:`y_j=\wp_{222}s_j+\wp_{122}`. The inverse loop uses::
 
    divisor = divisor_from_state(initial_state, data)
-   image = data["curve"].abel_map_kind_1(divisor, reduce=True)
+   image = data["curve"].abel_map_kind_1(divisor, reduce=True).value
 
 The example checks that each point lies on the spectral curve, that
 ``image`` agrees with the original :math:`u_0` modulo full periods, and

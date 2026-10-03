@@ -12,6 +12,8 @@ This is a different representation of the classical top from the
 period matrix, flow velocity and marked-point shifts are supplied numerical
 data in the runnable script. This page checks the theta reconstruction;
 it does not reconstruct those data from a spectral curve.
+The :doc:`curve-data companion <bobenko_curve_data>` computes periods,
+marked-point Abel shifts and the flow velocity in Genera's geometric marking.
 
 The physical equations
 -----------------------
@@ -41,6 +43,8 @@ The four conserved quantities checked along the trajectory are
    I_1&=(\ell_1g_1+\ell_2g_2+\ell_3g_3)^2,\\
    I_2&=(\ell_1^2-\ell_2^2+2g_1)^2+4(\ell_1\ell_2+g_2)^2.
    \end{aligned}
+
+.. _bobenko-theta-example:
 
 Theta values and derivatives
 -----------------------------

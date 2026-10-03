@@ -26,7 +26,7 @@ def test_period_validation_without_theta_dependency(monkeypatch):
         raise AssertionError("period computation must not prepare theta data")
 
     monkeypatch.setattr(ctx, '_rtheta_tau_data', theta_forbidden, raising=False)
-    curve = make_curve(ctx, (0, -1, 0, 1))
+    curve = make_curve(ctx, {(0, 2): 1, (1, 0): 1, (3, 0): -1})
     data = curve.periods_kind_1()
     assert ctx.almosteq(data.tau[0, 0], ctx.j)
     assert curve.validate(data).passed
@@ -152,7 +152,7 @@ def test_hyperelliptic_root_retries_are_bounded_and_restore_precision(monkeypatc
 
     monkeypatch.setattr(ctx, 'polyroots', unresolved)
     with pytest.raises(ValueError, match="failed to resolve hyperelliptic roots"):
-        make_curve(ctx, (0, -1, 0, 1)).periods_kind_1()
+        make_curve(ctx, {(0, 2): 1, (1, 0): 1, (3, 0): -1}).periods_kind_1()
     assert guards == [None, 50, 100]
     assert ctx.dps == 25
 

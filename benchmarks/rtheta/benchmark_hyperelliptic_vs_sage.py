@@ -195,9 +195,9 @@ def decoded_matrix(data):
 
 def mpmath_periods(coefficients):
     """Return the genera first-kind half-period matrix."""
-    from genera import algebraic_curve
+    from genera import Curve
     _stage_hyperelliptic_periods.cache_clear()
-    data = algebraic_curve(coefficients).periods_kind_1()
+    data = Curve({(0, 2): 1, **{(i, 0): -c for i, c in enumerate(coefficients)}}).periods_kind_1()
     omega, omega_prime = data.omega, data.omega_prime
     periods = mp.matrix(omega.rows, 2 * omega.cols)
     periods[:, :omega.cols] = omega

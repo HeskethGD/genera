@@ -140,4 +140,7 @@ def _hyperelliptic_abel_map(
         return +result, +second_result, shift
     if second_kind:
         return +result, +second_result
+    if _return_shift:
+        shift = tuple(int(value) for value in lattice_shift) if reduce else None
+        return +result, shift
     return +result

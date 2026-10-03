@@ -77,7 +77,7 @@ Run from the Genera repository root with
 import argparse
 import time
 
-from genera import algebraic_curve, kleinian_sigma_jet
+from genera import Curve, kleinian_sigma_jet
 from mpmath import mp, mpf, polyroots, quad, sqrt
 
 from examples._rk4 import rk4_step
@@ -155,7 +155,7 @@ def problem_data():
     u8 = min((u for u in real_roots if u < -mpf("0.01")), key=abs)
     p7 = p7_coefficients(r8, u8)
     x_roots = polyroots(p7, maxsteps=200, asc=True)
-    curve = algebraic_curve(p7)
+    curve = Curve({(0, 2): 1, **{(i, 0): -c for i, c in enumerate(p7)}})
     first = curve.periods_kind_1()
     second = curve.periods_kind_2()
     omega, tau, kappa, characteristic = (
@@ -264,7 +264,7 @@ def stratum_point(data, start, t, f_init, tolerance):
 
 def analytic_orbit(data, x_start, phi_values, tolerance):
     """Return r(phi) from the stratum inversion plus residual maxima."""
-    start = data["curve"].abel_map_kind_1((x_start, 0), reduce=True)
+    start = data["curve"].abel_map_kind_1((x_start, 0), reduce=True).value
     f1 = f2 = mp.zero
     rows = []
     residuals = []

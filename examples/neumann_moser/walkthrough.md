@@ -37,7 +37,7 @@ coefficients = [mp.mpf(4)]          # 4 * prod(x - root)
 for root in roots:
     coefficients = multiply_by_linear(coefficients, root)
 
-curve = mp.algebraic_curve(coefficients)
+curve = Curve({(0, 2): 1, **{(i, 0): -c for i, c in enumerate(coefficients)}})
 first = curve.periods_kind_1()
 second = curve.periods_kind_2()
 omega, tau = first.omega, first.tau
@@ -141,3 +141,29 @@ The full runnable script is `neumann_moser_kleinian_demo.py`; run it from the re
 ```
 .venv/bin/python -m examples.neumann_moser.neumann_moser_kleinian_demo
 ```
+
+## 7. Starting with physical initial coefficients
+
+The script also accepts an independent initial state through
+`--initial-state u1 u2 v1 v2 w1 w2 w3`, with `--start=0`. The canonical
+curve convention used here requires `w1=-u1`.
+
+For example, `(-1,-2,0.1,0.2,1,-13.75,-7)` specifies
+`U=(s+1)(s-2)`, `V=s/10+1/5`, and `W=(s+4)(s+1/2)(s-7/2)`.
+The curve is derived as `F=4*(U*W+V**2)`; the roots of `U`, with sheets
+`y=2*V(s)`, determine the divisor. `data_from_initial_state` obtains its
+Abelian offset using `Curve.abel_map_kind_1` and constructs the compatible
+period and characteristic data. No analytic state is used to choose these
+initial coefficients.
+
+```sh
+python -m examples.neumann_moser.neumann_moser_kleinian_demo \
+    --initial-state -1 -2 0.1 0.2 1 -13.75 -7 \
+    --start=0 --stop=0.1 --steps 128 --samples 5
+```
+
+RK4 starts from the supplied state. At 25 decimal digits the reconstructed
+initial-state error is about `1e-25`, and the maximum sampled trajectory
+error is about `9e-13`. Comparing 64 and 128 steps gives the expected
+factor of about sixteen. These tolerances describe this example, not all
+admissible initial states.

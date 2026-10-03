@@ -68,6 +68,8 @@ continuation around infinity gives a three-cycle. The resulting homology
 has genus three and intersection rank six, giving three canonical pairs
 of cycles.
 
+.. _bernatska-custom-bases:
+
 Supplying the differential bases
 ---------------------------------
 
@@ -110,13 +112,11 @@ The construction uses the mpmath context explicitly::
    from genera import Curve
    from mpmath import mp
 
-   curve = Curve(mp, trigonal_curve())
    first_kind, second_kind = differentials()
-   first = curve.periods_kind_1(first_kind)
-   second = curve.periods_kind_2(
-       differentials=first_kind,
-       second_differentials=second_kind,
-   )
+   curve = Curve(trigonal_curve(), ctx=mp, differentials_kind_1=first_kind,
+                 differentials_kind_2=second_kind)
+   first = curve.periods_kind_1()
+   second = curve.periods_kind_2()
 
 Here ``trigonal_curve`` and ``differentials`` are helpers in the complete
 example. The returned records contain mutually compatible half-periods,

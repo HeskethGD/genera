@@ -72,12 +72,12 @@ Uppercase :math:`G_2,G_3` distinguish the cubic coefficients from the
 direction cosines. The five real branch points satisfy
 :math:`k_1>e_1>e_2>k_2>e_3`.
 
-The script expands this polynomial into ascending coefficients and passes
-them to :func:`genera.algebraic_curve`. The central API calls are::
+The script expands the polynomial and builds a sparse equation mapping for
+:ref:`Curve <curve-class>`. The central API calls are::
 
-   curve = algebraic_curve(curve_coefficients())
+   curve = Curve({(0, 2): 1, **{(i, 0): -c for i, c in enumerate(curve_coefficients())}})
    periods = curve.periods_kind_1()
-   u0 = curve.abel_map_kind_1(divisor_places(INITIAL))
+   u0 = curve.abel_map_kind_1(divisor_places(INITIAL)).value
 
 Here ``curve_coefficients`` and ``divisor_places`` are helpers in the
 complete example. All periods and Abel coordinates come from the same

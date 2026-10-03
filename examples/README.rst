@@ -23,12 +23,16 @@ Examples
     The working genus-three Kowalewski-top formula of Bobenko, Reyman and
     Semenov-Tian-Shansky. The experimental genus-two route is intentionally
     not included.
+    The ``curve_data`` companion computes marked Abel shifts and flow residues
+    from the spectral curve in Genera's geometric marking.
 
 ``kovalevskaya_original``
     The original theta-functional Kovalevskaya construction.
 
 ``manakov`` and ``neumann_moser``
     Finite-dimensional integrable systems checked against RK4 trajectories.
+    The genus-two Neumann–Moser example also accepts physical initial
+    coefficients through ``--initial-state`` and computes their Abelian phase.
 
 ``onishi`` and ``onishi_trigonal_genus_3``
     Determinant and sigma-function identities.

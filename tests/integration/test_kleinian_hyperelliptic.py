@@ -10,7 +10,7 @@ from mpmath import mp
 
 
 def _curve(coefficients):
-    return Curve(mp, coefficients)
+    return Curve({(0, 2): 1, **{(i, 0): -c for i, c in enumerate(coefficients)}}, ctx=mp)
 
 
 def hyperelliptic_periods(coefficients, method="auto", second_kind=False):
@@ -41,7 +41,7 @@ def hyperelliptic_abel_map(
     if method != "auto":
         raise ValueError("Kleinian tests use automatic curve dispatch")
     curve = _curve(coefficients)
-    first = curve.abel_map_kind_1(target, reduce=reduce)
+    first = curve.abel_map_kind_1(target, reduce=reduce).value
     if not second_kind:
         return first
     second = curve.abel_map_kind_2(target, reduce=reduce)

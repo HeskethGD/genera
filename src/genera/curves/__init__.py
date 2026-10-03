@@ -9,11 +9,11 @@ evaluation of the computational pipeline: branch locus, monodromy, genus,
 homology, periods, and Riemann constant.
 
 Example:
-    >>> from genera import algebraic_curve
+    >>> from genera import Curve
     >>> from mpmath import mp
     >>> mp.dps = 30
     >>> # Fermat cubic x^3 + y^3 = 1
-    >>> curve = algebraic_curve({(3, 0): 1, (0, 3): 1, (0, 0): -1})
+    >>> curve = Curve({(3, 0): 1, (0, 3): 1, (0, 0): -1})
     >>> curve.genus
     1
     >>> curve.branch_locus.degree
@@ -26,7 +26,7 @@ from .algebraic_curve import (
     CurveBranchLocus,
     CurveChart,
     CurveCheck,
-    CurveFirstKindPeriods,
+    CurvePeriodsKind1,
     CurveGenus,
     CurveHomology,
     CurveIntegral,
@@ -35,19 +35,18 @@ from .algebraic_curve import (
     CurvePath,
     CurvePlace,
     CurveRiemannConstant,
-    CurveSecondKindAbelMap,
-    CurveSecondKindPeriods,
+    CurveAbelMapKind1,
+    CurveAbelMapKind2,
+    CurvePeriodsKind2,
     CurveValidation,
-    algebraic_curve,
 )
 
 __all__ = [
     'Curve',
-    'algebraic_curve',
     'CurveBranchLocus',
     'CurveChart',
     'CurveCheck',
-    'CurveFirstKindPeriods',
+    'CurvePeriodsKind1',
     'CurveGenus',
     'CurveHomology',
     'CurveIntegral',
@@ -56,7 +55,8 @@ __all__ = [
     'CurvePath',
     'CurvePlace',
     'CurveRiemannConstant',
-    'CurveSecondKindAbelMap',
-    'CurveSecondKindPeriods',
+    'CurveAbelMapKind1',
+    'CurveAbelMapKind2',
+    'CurvePeriodsKind2',
     'CurveValidation',
 ]

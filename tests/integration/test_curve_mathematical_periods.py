@@ -1,6 +1,6 @@
 """Independent identities for the sole general integration pipeline."""
 
-from tests._support import make_curve
+from tests._support import make_curve, with_basis
 from itertools import combinations
 from math import gcd
 
@@ -83,20 +83,20 @@ def test_general_mu_period_precision_and_exact_second_kind_forms():
     ctx.dps = 18
     curve = make_curve(ctx, terms)
     forms = (lambda x,y:1, lambda x,y:2*x, lambda x,y:3*x*x)
-    second = curve.periods_kind_2(second_differentials=forms)
+    second = with_basis(curve, differentials_kind_2=forms).periods_kind_2()
     assert ctx.norm(second.eta)+ctx.norm(second.eta_prime) < ctx.mpf('1e-15')
     base = curve.fibre(ctx.mpc('0.3','0.7'))[0]
     target = curve.fibre(ctx.mpc('0.4','0.8'))[-1]
-    result = curve.abel_map_kind_2(target,base_place=base,second_differentials=forms)
+    result = with_basis(curve, differentials_kind_2=forms).abel_map_kind_2(target, base_place=base)
     assert ctx.norm(result.value-ctx.matrix([target.x**i-base.x**i for i in (1,2,3)])) < ctx.mpf('1e-15')
 
 
 def test_genus_two_supplied_periods_match_specialized_lattice():
     ctx = mp.clone()
     ctx.dps = 20
-    curve = make_curve(ctx, (0,4,0,-5,0,1))
+    curve = make_curve(ctx, {(0, 2): 1, (1, 0): -4, (3, 0): 5, (5, 0): -1})
     automatic = _full(ctx,curve.periods_kind_1())
-    supplied = _full(ctx,curve.periods_kind_1((lambda x,y:1/y,lambda x,y:x/y)))
+    supplied = _full(ctx,with_basis(curve, differentials_kind_1=(lambda x,y:1/y,lambda x,y:x/y)).periods_kind_1())
     def realify(matrix):
         return ctx.matrix([[ctx.re(z) for z in row] for row in matrix.tolist()]+
                           [[ctx.im(z) for z in row] for row in matrix.tolist()])

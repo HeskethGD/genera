@@ -36,7 +36,7 @@ coefficients = [mp.mpf(4)]          # 4 * prod(x - root)
 for root in roots:
     coefficients = multiply_by_linear(coefficients, root)
 
-curve = mp.algebraic_curve(coefficients)
+curve = Curve({(0, 2): 1, **{(i, 0): -c for i, c in enumerate(coefficients)}})
 first = curve.periods_kind_1()
 second = curve.periods_kind_2()
 omega, tau = first.omega, first.tau
@@ -114,7 +114,7 @@ $$ \wp''_2 = 6\wp_2^2 + 4\wp_4 + \tfrac{\lambda_4}{2}, \qquad \wp''_4 = 6(\wp_2\
 ```python
 roots = mp.polyroots([u3, u2, u1, mp.one])               # roots of U_xi
 divisor = [(x, 2 * (v1 * x**2 + v2 * x + v3)) for x in roots]
-image = curve.abel_map_kind_1(divisor, reduce=True)
+image = curve.abel_map_kind_1(divisor, reduce=True).value
 ```
 
 At 30 decimal places with 3200 RK4 steps over $t \in [-4, 4]$, three phases:

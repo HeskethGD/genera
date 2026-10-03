@@ -62,7 +62,7 @@ Run from the Genera repository root with
 
 import argparse
 
-from genera import algebraic_curve, kleinian_p
+from genera import Curve, kleinian_p
 from mpmath import mp
 
 from examples._rk4 import rk4_step
@@ -102,7 +102,7 @@ def real_part(value, name):
 def problem_data():
     """Construct the curve, periods and the Abelian starting point."""
     coefficients = curve_coefficients()
-    curve = algebraic_curve(coefficients)
+    curve = Curve({(0, 2): 1, **{(i, 0): -c for i, c in enumerate(coefficients)}})
     first = curve.periods_kind_1()
     second = curve.periods_kind_2()
     omega, tau, kappa, characteristic = (
@@ -174,6 +174,37 @@ def divisor_from_state(state):
     return tuple((root, 2 * (v1 * root + v2)) for root in roots)
 
 
+def data_from_initial_state(initial_state):
+    """Construct the spectral curve and Abelian phase from a physical state.
+
+    The seven entries are ``(u1, u2, v1, v2, w1, w2, w3)``. This example's
+    canonical curve convention requires ``w1 = -u1``; the initial divisor
+    must contain two distinct finite points on a smooth genus-two curve.
+    """
+    state = tuple(mp.mpf(value) for value in initial_state)
+    if len(state) != 7:
+        raise ValueError("initial_state must contain seven real coefficients")
+    if state[4] != -state[0]:
+        raise ValueError("this canonical-curve example requires w1 = -u1")
+    coefficients = [4 * value for value in spectral_polynomial(state, None)]
+    curve = Curve(polynomial={
+        (0, 2): 1, **{(i, 0): -c for i, c in enumerate(coefficients)}})
+    first = curve.periods_kind_1()
+    second = curve.periods_kind_2()
+    data = {
+        "coefficients": coefficients,
+        "curve": curve,
+        "omega": first.omega,
+        "tau": first.tau,
+        "kappa": second.kappa,
+        "characteristic": curve.riemann_constant().characteristic,
+        "initial_state": state,
+    }
+    divisor = divisor_from_state(state)
+    data["u_offset"] = curve.abel_map_kind_1(divisor, reduce=True).value
+    return data
+
+
 def period_lattice_residual(left, right, data):
     """Return the residual after resolving left-right in the full lattice."""
     genus = data["omega"].rows
@@ -202,7 +233,7 @@ def abel_map_residuals(data):
     curve_residual = max(abs(
         y ** 2 - mp.polyval(data["coefficients"], x, asc=True))
         for x, y in divisor)
-    image = data["curve"].abel_map_kind_1(divisor, reduce=True)
+    image = data["curve"].abel_map_kind_1(divisor, reduce=True).value
     lattice_residual = period_lattice_residual(
         image, data["u_offset"], data)
     recovered_data = dict(data)
@@ -281,7 +312,7 @@ def kleinian_residuals(data):
     return abs(residual_second), abs(residual_cross)
 
 
-def compute_comparison(data, start, stop, steps, samples):
+def compute_comparison(data, start, stop, steps, samples, *, initial_state=None):
     """Return sampled analytic and RK4 trajectories."""
     if steps <= 0 or samples <= 1:
         raise ValueError("steps must be positive and samples must exceed one")
@@ -289,7 +320,10 @@ def compute_comparison(data, start, stop, steps, samples):
         raise ValueError("steps must be divisible by samples - 1")
     step = (stop - start) / steps
     sample_stride = steps // (samples - 1)
-    state = analytic_state(start, data)
+    if initial_state is not None and start != 0:
+        raise ValueError("a supplied initial_state belongs to start=0")
+    state = (analytic_state(start, data) if initial_state is None
+             else tuple(initial_state))
     initial_polynomial = spectral_polynomial(state, data)
     rows = []
     for index in range(steps + 1):
@@ -307,6 +341,20 @@ def compute_comparison(data, start, stop, steps, samples):
     return rows
 
 
+def initial_value_example(*, stop="0.1", steps=128, samples=5):
+    """Compare a recovered Kleinian solution with independently started RK4.
+
+    The rational initial coefficients are specified before computing any
+    theta or Kleinian values. In polynomial form, U=(x+1)(x-2),
+    V=x/10+1/5 and W=(x+4)(x+1/2)(x-7/2).
+    """
+    initial = tuple(mp.mpf(value) for value in
+                    ("-1", "-2", "0.1", "0.2", "1", "-13.75", "-7"))
+    data = data_from_initial_state(initial)
+    return compute_comparison(
+        data, mp.zero, mp.mpf(stop), steps, samples, initial_state=initial)
+
+
 def parse_arguments():
     """Parse command-line options."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -319,6 +367,9 @@ def parse_arguments():
         "--phases", nargs="+", default=("-6", "0.13", "6"),
         help="constant first Abelian coordinates to compare")
     parser.add_argument("--tol", default="1e-5")
+    parser.add_argument(
+        "--initial-state", nargs=7, metavar="COEFFICIENT",
+        help="u1 u2 v1 v2 w1 w2 w3 at t=0; requires --start=0 and w1=-u1")
     return parser.parse_args()
 
 
@@ -326,6 +377,21 @@ def main():
     """Run the numerical comparison and print its residuals."""
     arguments = parse_arguments()
     mp.dps = arguments.dps
+    if arguments.initial_state is not None:
+        data = data_from_initial_state(arguments.initial_state)
+        rows = compute_comparison(
+            data, mp.mpf(arguments.start), mp.mpf(arguments.stop),
+            arguments.steps, arguments.samples,
+            initial_state=data["initial_state"])
+        initial_error = max(rows[0][3])
+        trajectory_error = max(max(row[3]) for row in rows)
+        drift = max(row[4] for row in rows)
+        print("recovered initial-state residual:", mp.nstr(initial_error, 8))
+        print("maximum trajectory residual:", mp.nstr(trajectory_error, 8))
+        print("spectral drift:", mp.nstr(drift, 8))
+        if max(initial_error, trajectory_error, drift) > mp.mpf(arguments.tol):
+            raise SystemExit("initial-value solution failed its RK4 tolerance")
+        return
     common_data = problem_data()
     summaries = []
     for phase_text in arguments.phases:

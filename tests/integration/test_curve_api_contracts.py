@@ -1,6 +1,6 @@
 """Public curve contracts that do not depend on theta or Kleinian functions."""
 
-from tests._support import make_curve
+from tests._support import make_curve, with_basis
 
 import warnings
 
@@ -9,7 +9,7 @@ import pytest
 import genera.curves._operations as curve_operations
 from genera.curves import (
     CurveBranchLocus, CurveGenus, CurveHomology, CurveMonodromy, CurvePlace,
-    CurveRiemannConstant,
+    CurveRiemannConstant, CurveAbelMapKind1, CurveAbelMapKind2,
 )
 from genera.curves.polynomial import _prepare_plane_curve
 from genera.curves._stages import _stage_geometric_periods
@@ -17,42 +17,38 @@ from genera.curves.jacobian import _finite_geometric_abel_value
 from mpmath import mp
 
 
-@pytest.mark.parametrize("specification,message", [
-    (None, "coefficients or sparse plane terms"),
-    ((), "must not be empty"),
+@pytest.mark.parametrize("polynomial,message", [
+    (None, "sparse mapping"),
+    ((), "sparse mapping"),
+    ((0, -1, 0, 1), "sparse mapping"),
+    ([(0, 2, 1), (3, 0, -1)], "sparse mapping"),
     ({}, "must be nonzero"),
     ({(0, 2): 0}, "must be nonzero"),
     ({(2, 0): 1}, "must depend on y"),
     ({(0, -1): 1}, "nonnegative integers"),
     ({"y": 1}, "nonnegative integers"),
     ({(0, 2): "invalid"}, "coefficients must be numbers"),
-    (((0, 2, "invalid"),), "coefficients must be numbers"),
+    (((0, 2, "invalid"),), "sparse mapping"),
     ({(0, 2): "inf"}, "coefficients must be finite"),
     ({(0, 2): "nan"}, "coefficients must be finite"),
 ])
-def test_curve_constructor_rejects_invalid_specification(specification, message):
+def test_curve_constructor_rejects_invalid_polynomial(polynomial, message):
     with pytest.raises(ValueError, match=message):
-        make_curve(mp, specification)
+        make_curve(mp, polynomial)
 
 
-def test_curve_materializes_input_and_returns_a_copy_of_the_specification():
+def test_curve_materializes_input_and_returns_a_copy_of_the_polynomial():
     ctx = mp.clone()
     source = {(0, 2): 1, (3, 0): -1, (1, 0): 1}
     expected = dict(source)
     curve = make_curve(ctx, source)
     source[(3, 0)] = -2
-    exported = curve.specification
+    exported = curve.polynomial
     exported[(3, 0)] = -3
-    assert curve.specification == expected
+    assert curve.polynomial == expected
     assert repr(curve) == (
         f"Curve(x_degree=3, y_degree=2, ctx.prec={ctx.prec})")
 
-    terms = ((i, j, value) for (i, j), value in expected.items())
-    from_terms = make_curve(ctx, terms)
-    assert tuple(terms) == ()
-    assert from_terms.specification == tuple(
-        (i, j, value) for (i, j), value in expected.items())
-    assert from_terms.branch_locus == curve.branch_locus
     with ctx.workdps(25), pytest.warns(UserWarning, match="context changed"):
         assert curve.branch_locus.branch_values == (-1, 0, 1)
 
@@ -97,7 +93,7 @@ def test_curve_recomputes_exact_inputs_without_inventing_coefficient_precision()
 def test_period_results_preserve_basis_and_do_not_share_mutable_matrices():
     ctx = mp.clone()
     ctx.dps = 18
-    curve = make_curve(ctx, (0, -1, 0, 1))
+    curve = make_curve(ctx, {(0, 2): 1, (1, 0): 1, (3, 0): -1})
     first = curve.periods_kind_1()
     expected = tuple(+getattr(first, name) for name in ("omega", "omega_prime", "tau"))
     for name in ("omega", "omega_prime", "tau"):
@@ -105,7 +101,7 @@ def test_period_results_preserve_basis_and_do_not_share_mutable_matrices():
     # A supplied basis selects a different marking without changing the
     # default basis or contaminating its cached matrices.
     forms = (lambda x, y: 2 / y,)
-    supplied = curve.periods_kind_1(forms)
+    supplied = with_basis(curve, differentials_kind_1=forms).periods_kind_1()
     assert supplied.differentials == forms
     assert supplied.marking == "geometric-polygon"
     again = curve.periods_kind_1()
@@ -153,7 +149,7 @@ def test_curve_validation_reports_failed_topological_checks():
 
 @pytest.mark.parametrize("characteristic", [None, ((), ()), ((mp.inf,), (0,))])
 def test_riemann_constant_validation_rejects_invalid_characteristics(characteristic):
-    curve = make_curve(mp, (0, -1, 0, 1))
+    curve = make_curve(mp, {(0, 2): 1, (1, 0): 1, (3, 0): -1})
     result = CurveRiemannConstant(
         mp.matrix([mp.mpc('.5', '.5')]), characteristic, None, None,
         "hyperelliptic", "baker")
@@ -165,7 +161,7 @@ def test_riemann_constant_validation_rejects_invalid_characteristics(characteris
 
 @pytest.mark.parametrize("value", [mp.matrix([[0, 1]]), mp.matrix([mp.inf])])
 def test_riemann_constant_validation_rejects_invalid_values(value):
-    curve = make_curve(mp, (0, -1, 0, 1))
+    curve = make_curve(mp, {(0, 2): 1, (1, 0): 1, (3, 0): -1})
     result = CurveRiemannConstant(
         value, ((0,), (0,)), None, None, "hyperelliptic", "baker")
     assert not curve.validate(result).passed
@@ -174,7 +170,7 @@ def test_riemann_constant_validation_rejects_invalid_values(value):
 def test_curve_validation_uses_recorded_residual_and_current_precision():
     ctx = mp.clone()
     ctx.dps = 15
-    curve = make_curve(ctx, (0, -1, 0, 1))
+    curve = make_curve(ctx, {(0, 2): 1, (1, 0): 1, (3, 0): -1})
     residual = ctx.mpf("1e-8")
     result = CurveRiemannConstant(
         ctx.matrix([ctx.mpc('.5', '.5')]), ((ctx.mpf('.5'),), (ctx.mpf('.5'),)),
@@ -190,14 +186,14 @@ def test_curve_validation_uses_recorded_residual_and_current_precision():
 
 @pytest.mark.parametrize("periods", [None, [[1, 2]], [["invalid"]]])
 def test_lattice_reduction_rejects_invalid_periods(periods):
-    curve = make_curve(mp, (0, -1, 0, 1))
+    curve = make_curve(mp, {(0, 2): 1, (1, 0): 1, (3, 0): -1})
     with pytest.raises(ValueError, match="periods must be square"):
         curve.lattice_reduce([0], periods)
 
 
 @pytest.mark.parametrize("value", [None, [0, 1], [[0, 1]], ["invalid"]])
 def test_lattice_reduction_rejects_invalid_vectors(value):
-    curve = make_curve(mp, (0, -1, 0, 1))
+    curve = make_curve(mp, {(0, 2): 1, (1, 0): 1, (3, 0): -1})
     with pytest.raises(ValueError, match="genus-length column vector"):
         curve.lattice_reduce(value, mp.matrix([[1j]]))
 
@@ -227,37 +223,43 @@ def test_public_path_rejects_nonregular_endpoints(place, message):
         curve.path(place, (1, 1))
 
 
-def test_hyperelliptic_supplied_second_kind_forms_require_first_kind_basis():
-    curve = make_curve(mp, (0, -1, 0, 1))
-    forms = (lambda x, y: x/y,)
-    with pytest.raises(ValueError, match="require a supplied first-kind basis"):
-        curve.periods_kind_2(second_differentials=forms)
-    with pytest.raises(ValueError, match="require a supplied first-kind basis"):
-        curve.abel_map_kind_2([], second_differentials=forms)
+def test_second_kind_only_basis_selects_consistent_geometric_marking():
+    ctx = mp.clone()
+    ctx.dps = 18
+    curve = make_curve(ctx, {(0, 2): 1, (1, 0): 1, (3, 0): -1},
+                       differentials_kind_2=(lambda x, y: x / y,))
+    first = curve.periods_kind_1()
+    second = curve.periods_kind_2()
+    assert curve.differentials_kind_1 is None
+    assert first.marking == second.marking == curve.homology.marking == "geometric-polygon"
+    assert curve.riemann_constant().marking == first.marking
+    target = (ctx.mpf(2), ctx.sqrt(6))
+    assert curve.abel_map_kind_1(target).marking == first.marking
+    assert curve.abel_map_kind_2(target).marking == first.marking
 
 
 def test_hyperelliptic_chart_endpoints_require_supplied_forms():
-    curve = make_curve(mp, (0, -1, 0, 1))
+    curve = make_curve(mp, {(0, 2): 1, (1, 0): 1, (3, 0): -1})
     chart = curve.monomial_chart(-2, -3)
     place = curve.chart_place(chart, 1, mp.mpf('.1'))
     for target in (place, [place]):
         with pytest.raises(ValueError, match="chart-backed places require the general pipeline"):
-            curve.abel_map_kind_1(target)
+            curve.abel_map_kind_1(target).value
     with pytest.raises(ValueError, match="base_place must be one affine point"):
-        curve.abel_map_kind_1([], base_place=[])
+        curve.abel_map_kind_1([], base_place=[]).value
 
 
 def test_hyperelliptic_second_kind_unreduced_result_and_scalar_target():
     ctx = mp.clone()
     ctx.dps = 18
-    curve = make_curve(ctx, (0, -1, 0, 1))
+    curve = make_curve(ctx, {(0, 2): 1, (1, 0): 1, (3, 0): -1})
     target = (ctx.mpf(2), ctx.sqrt(6))
     result = curve.abel_map_kind_2(target)
     assert result.reduction_shift is None
     assert result.engine == "hyperelliptic"
     assert all(ctx.isfinite(entry) for entry in result.value)
     with pytest.raises(ValueError, match="affine point"):
-        curve.abel_map_kind_1(2)
+        curve.abel_map_kind_1(2).value
 
 
 def test_geometric_periods_reject_nonpositive_imaginary_part(monkeypatch):
@@ -278,3 +280,117 @@ def test_geometric_abel_open_path_rejects_an_unmatched_place():
     data = _stage_geometric_periods(ctx, curve)
     with pytest.raises(ValueError, match="could not be matched"):
         _finite_geometric_abel_value(ctx, curve, data, CurvePlace(2, 0), ())
+
+
+@pytest.mark.parametrize("geometric", [False, True])
+@pytest.mark.parametrize("explicit_base", [False, True])
+def test_first_kind_abel_record_retains_reduction_shift(geometric, explicit_base):
+    ctx = mp.clone()
+    ctx.dps = 18
+    curve = make_curve(ctx, {(0, 2): 1, (1, 0): 1, (3, 0): -1})
+    forms = (lambda x, y: 1 / y,) if geometric else None
+    point = (ctx.mpf(2), ctx.sqrt(6))
+    base = (ctx.mpf(3), ctx.sqrt(24)) if explicit_base else None
+    raw = with_basis(curve, differentials_kind_1=forms).abel_map_kind_1([point] * 5, base_place=base)
+    reduced = with_basis(curve, differentials_kind_1=forms).abel_map_kind_1([point] * 5, base_place=base, reduce=True)
+    assert isinstance(raw, CurveAbelMapKind1)
+    assert raw._fields == CurveAbelMapKind2._fields
+    assert raw.reduction_shift is None
+    assert reduced.engine == raw.engine == ("general" if geometric else "hyperelliptic")
+    assert reduced.marking == raw.marking == ("geometric-polygon" if geometric else "baker")
+    periods = with_basis(curve, differentials_kind_1=forms).periods_kind_1()
+    m, n = reduced.reduction_shift
+    assert isinstance(m, int) and isinstance(n, int)
+    assert ctx.norm(raw.value - reduced.value - 2 * periods.omega * m
+                    - 2 * periods.omega_prime * n) < ctx.mpf("1e-14")
+
+
+def test_unreduced_abel_record_does_not_request_periods(monkeypatch):
+    ctx = mp.clone()
+    ctx.dps = 18
+    curve = make_curve(ctx, {(0, 2): 1, (1, 0): 1, (3, 0): -1})
+
+    def periods_forbidden(*args, **kwargs):
+        raise AssertionError("an unreduced Abel map must not request period matrices")
+
+    monkeypatch.setattr(curve_operations, "periods", periods_forbidden)
+    from genera.curves._hyperelliptic import operations as specialized
+    monkeypatch.setattr(specialized, "_first_kind_periods", periods_forbidden)
+    for base in (None, (ctx.mpf(3), ctx.sqrt(24))):
+        result = curve.abel_map_kind_1((ctx.mpf(2), ctx.sqrt(6)), base_place=base)
+        assert result.reduction_shift is None
+        assert all(ctx.isfinite(entry) for entry in result.value)
+
+
+@pytest.mark.parametrize("argument", ["differentials_kind_1", "differentials_kind_2"])
+@pytest.mark.parametrize("forms", [0, (), (1,)])
+def test_constructor_rejects_invalid_bound_bases(argument, forms):
+    with pytest.raises(ValueError, match=argument + " must be a sequence of callables"):
+        make_curve(mp, {(0, 2): 1, (1, 0): -1}, **{argument: forms})
+
+
+def test_constructor_materializes_bases_without_running_numerical_stages(monkeypatch):
+    def numerical_stage_forbidden(*args, **kwargs):
+        raise AssertionError("constructing a bound basis must remain lazy")
+
+    monkeypatch.setattr(curve_operations, "periods", numerical_stage_forbidden)
+    monkeypatch.setattr(curve_operations, "homology", numerical_stage_forbidden)
+    du = lambda x, y: 1 / y
+    dr = lambda x, y: x / y
+    source = [du]
+    second_source = (form for form in (dr,))
+    curve = make_curve(mp, {(0, 2): 1, (1, 0): 1, (3, 0): -1},
+                       differentials_kind_1=source, differentials_kind_2=second_source)
+    source.clear()
+    assert curve.differentials_kind_1 == (du,)
+    assert curve.differentials_kind_2 == (dr,)
+    assert tuple(second_source) == ()
+    with pytest.raises(AttributeError):
+        curve.differentials_kind_1 = (dr,)
+    with pytest.raises(AttributeError):
+        curve.differentials_kind_2 = (du,)
+
+
+@pytest.mark.parametrize("polynomial", [
+    {(0, 2): 1, (1, 0): 1, (3, 0): -1},
+    {(0, 3): 1, (4, 0): -1, (0, 0): 1},
+])
+def test_missing_second_kind_basis_explains_constructor_remedy(polynomial, monkeypatch):
+    curve = make_curve(mp, polynomial, differentials_kind_1=(lambda x, y: 1 / y,))
+
+    def integration_forbidden(*args, **kwargs):
+        raise AssertionError("missing second-kind basis should fail before integration")
+
+    monkeypatch.setattr(curve_operations, "periods", integration_forbidden)
+    monkeypatch.setattr(curve_operations, "abel_map", integration_forbidden)
+    for method in (curve.periods_kind_2, lambda: curve.abel_map_kind_2([])):
+        with pytest.raises(ValueError, match="Construct Curve.*differentials_kind_2"):
+            method()
+
+
+@pytest.mark.parametrize("method,args,kwargs", [
+    ("periods_kind_1", (), {"differentials_kind_1": ()}),
+    ("periods_kind_2", (), {"differentials_kind_2": ()}),
+    ("riemann_matrix", ((),), {}),
+    ("riemann_constant", (), {"differentials_kind_1": ()}),
+    ("abel_map_kind_1", ([], ()), {}),
+    ("abel_map_kind_2", ([],), {"differentials_kind_2": ()}),
+])
+def test_bound_basis_methods_reject_per_call_overrides(method, args, kwargs):
+    curve = make_curve(mp, {(0, 2): 1, (1, 0): 1, (3, 0): -1})
+    with pytest.raises(TypeError):
+        getattr(curve, method)(*args, **kwargs)
+
+
+def test_bound_custom_basis_reuses_its_period_cache_without_mutable_aliases():
+    ctx = mp.clone()
+    ctx.dps = 18
+    forms = (lambda x, y: 1 / y,)
+    curve = make_curve(ctx, {(0, 2): 1, (1, 0): 1, (3, 0): -1},
+                       differentials_kind_1=forms, differentials_kind_2=(lambda x, y: x / y,))
+    curve.periods_kind_2()
+    first = curve.periods_kind_1()
+    expected = +first.omega
+    first.omega[0, 0] = 0
+    assert curve.periods_kind_1().omega == expected
+    assert curve.homology.marking == curve.periods_kind_1().marking
