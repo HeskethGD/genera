@@ -58,9 +58,9 @@ print(mp.nstr(abs(rhs - lhs), 6))  # 6.31089e-29
 ```
 
 The curve supplies the period data and canonical hyperelliptic sigma
-normalization automatically. See the [example walkthrough](docs/examples/baker_formula.rst)
+normalization automatically. See the [example walkthrough](https://genera.readthedocs.io/en/latest/examples/baker_formula.html)
 for the identity and conventions, or run the
-[complete example](examples/baker_formula/baker_formula_demo.py).
+[complete example](https://github.com/HeskethGD/genera/blob/v0.1.0/examples/baker_formula/baker_formula_demo.py).
 
 ## Development
 
