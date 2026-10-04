@@ -83,6 +83,23 @@ Run the local checks with:
 
 Further numerical APIs and documentation will be added incrementally.
 
+### Publishing releases
+
+Publishing is manual through GitHub Actions. Push a release tag, then open
+**Actions → Publish to PyPI → Run workflow**, select `main`, and enter the
+tag (for example, `v0.1.0`). Pushing a commit or tag does not trigger publishing.
+The workflow tests the tagged commit on supported Python versions, builds and
+validates the distributions, checks an installed wheel, and publishes to PyPI.
+
+For the one-time setup, create a GitHub environment named `pypi` and register
+a [PyPI Trusted Publisher](https://docs.pypi.org/trusted-publishers/adding-a-publisher/)
+for owner `HeskethGD`, repository `genera`, workflow `release.yml`, and
+environment `pypi`. For the first release, register a
+[pending publisher](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/)
+for project `genera` in your PyPI account's Publishing settings. No API token
+is needed. Publish each version once; use a new tag and version for changes
+after publication.
+
 ## Examples
 
 Literature-based numerical examples live in the repository's `examples/`
