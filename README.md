@@ -1,6 +1,6 @@
 # Genera
 
-<img src="docs/_static/genera-logo.png" alt="Genera logo: a curved, gridded letter g in teal and gold" width="220">
+<img src="https://raw.githubusercontent.com/HeskethGD/genera/main/docs/_static/genera-logo.png" alt="Genera logo: a curved, gridded letter g in teal and gold" width="220">
 
 Genera is an early-stage numeric Python package for arbitrary-precision computation
 with algebraic curves and Abelian functions, particularly for applications in
@@ -9,6 +9,18 @@ integrable systems.
 Genera uses [mpmath](https://mpmath.org/) for arbitrary-precision arithmetic.
 It is an independent project and does not modify the mpmath namespace.
 Genera retains the applicable BSD-3-Clause copyright and licence notice.
+
+## Installation
+
+Install from PyPI:
+
+```sh
+pip install genera
+```
+
+Requires Python 3.11 or later.
+
+## Quick Example
 
 For example, verify Baker's genus-two addition formula using Kleinian sigma
 and P functions at arbitrary Abelian arguments. The identity is from
