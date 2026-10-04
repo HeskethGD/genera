@@ -4,7 +4,7 @@ Kovalevskaya's original theta-function solution
 This example follows S. Kowalevski's *Sur le problème de la rotation d'un
 corps solide autour d'un point fixe* [Kowalevski1889]_, sections 2 and 4--7.
 It constructs a genus-two spectral curve,
-computes its periods and Abel map with Genera, and reconstructs the motion
+computes its periods and Abel map with Generapy, and reconstructs the motion
 from Riemann theta quotients. An independent fourth-order Runge--Kutta
 integration (RK4) checks the result.
 
@@ -87,7 +87,7 @@ and the theta argument is :math:`v=(2\omega)^{-1}u`.
 From the Abel flow to the physical motion
 -----------------------------------------
 
-In Genera's ordered basis :math:`(ds/y,s\,ds/y)`, the selected sheets give
+In Generapy's ordered basis :math:`(ds/y,s\,ds/y)`, the selected sheets give
 the straight-line flow
 
 .. math::
@@ -107,13 +107,13 @@ The memoir reconstructs the motion through fifteen quantities
    \frac{\theta[\chi_\alpha](v(t)\mid\tau)}
         {\theta[K](v(t)\mid\tau)}.
 
-Genera's branch-point Abel images determine the numerator characteristics;
+Generapy's branch-point Abel images determine the numerator characteristics;
 ``curve.riemann_constant().characteristic`` supplies :math:`K`. The multiplier
 :math:`C_\alpha` is normalized using the algebraic value at the initial
 divisor, then held fixed and checked at twelve further divisors. These
 checks use the actual Abel maps, independently of the prescribed linear
 flow. The memoir's characteristic labels cannot simply be transferred to
-Genera's automatic homology marking.
+Generapy's automatic homology marking.
 
 The physical variables follow from the memoir's section-5 formulas. For
 example, :math:`q=E/\Delta`, where

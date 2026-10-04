@@ -14,7 +14,7 @@ it reads as follows; see also [BEH2005]_, equation (3.9):
 Here :math:`u,v\in\mathbb{C}^2` are arbitrary Abelian argument vectors,
 with :math:`\sigma(u)\sigma(v)\ne0`. They do not need to be constructed
 from curve points using Abel maps. This particular formula is for genus two;
-higher genera have different addition formulae.
+higher generapy have different addition formulae.
 
 A compact calculation
 ---------------------
@@ -26,7 +26,7 @@ provides the periods, Riemann characteristic and, for sigma, the canonical
 hyperelliptic normalization. That normalization matters because a constant
 multiplier of sigma changes the ratio on the left.
 
-Baker numbers the coordinates from one; Genera numbers them from zero.
+Baker numbers the coordinates from one; Generapy numbers them from zero.
 Thus :math:`\wp_{11},\wp_{12},\wp_{22}` correspond to ``(0, 0)``,
 ``(0, 1)``, ``(1, 1)`` respectively.
 

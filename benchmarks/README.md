@@ -1,6 +1,6 @@
-# Genera Benchmarks
+# Generapy Benchmarks
 
-Performance benchmarks for genera's algebraic curve and Abelian function implementations. These benchmarks compare genera against other symbolic/numeric mathematics systems but are **not part of the genera package** and are **not required for using genera**.
+Performance benchmarks for generapy's algebraic curve and Abelian function implementations. These benchmarks compare generapy against other symbolic/numeric mathematics systems but are **not part of the generapy package** and are **not required for using generapy**.
 
 ## Directory Structure
 
@@ -20,7 +20,7 @@ benchmarks/
 
 ### Required
 - Python 3.10+
-- genera installed in development mode: `.venv/bin/pip install -e '.[develop]'`
+- generapy installed in development mode: `.venv/bin/pip install -e '.[develop]'`
 
 ### Optional (for specific benchmarks)
 - **Wolfram Engine** (free for developers): Required for `benchmark_rtheta_vs_wolfram.py`
@@ -34,14 +34,14 @@ benchmarks/
 - **FLINT**: Required for `benchmark_rtheta_vs_flint.py`
   - Install via package manager
 
-**Note**: genera itself does not require any of these tools. They are only needed for comparative benchmarking.
+**Note**: generapy itself does not require any of these tools. They are only needed for comparative benchmarking.
 
 ## Quick Start
 
 Verify your setup with a minimal smoke test:
 
 ```bash
-# From the genera repository root
+# From the generapy repository root
 cd benchmarks/curves
 ../../.venv/bin/python benchmark_curves.py --preset smoke --digits 20 --trials 1
 ```
@@ -50,11 +50,11 @@ This runs two representative curve cases and validates the benchmark harness wit
 
 ## Running Benchmarks
 
-All commands should be run from the **genera repository root**.
+All commands should be run from the **generapy repository root**.
 
 ### Algebraic Curve Benchmarks
 
-The curve benchmarks compare genera's period computation against SageMath.
+The curve benchmarks compare generapy's period computation against SageMath.
 
 **List available test cases:**
 ```bash
@@ -156,11 +156,11 @@ Example output:
 ```
 | Case | Digits | Implementation | Successes/trials | Median seconds | Accuracy |
 |---|---:|---|---:|---:|---|
-| hyper-g2-symmetric | 30 | genera | 3/3 | 0.0672 | passed |
+| hyper-g2-symmetric | 30 | generapy | 3/3 | 0.0672 | passed |
 | hyper-g2-symmetric | 30 | sage | 3/3 | 0.5307 | passed |
 ```
 
-Speed ratios > 1.0 indicate genera was faster than the reference implementation.
+Speed ratios > 1.0 indicate generapy was faster than the reference implementation.
 
 ## Results Tracking
 
@@ -212,8 +212,8 @@ git commit -m "Add v0.1.0 benchmark baselines"
 
 Key points:
 - Each external tool runs in an isolated subprocess
-- Sage workers run in temporary directories outside the genera checkout
-- Never add genera to Sage's `PYTHONPATH`
+- Sage workers run in temporary directories outside the generapy checkout
+- Never add generapy to Sage's `PYTHONPATH`
 - Avoid running benchmarks concurrently from the same directory
 
 ## Troubleshooting

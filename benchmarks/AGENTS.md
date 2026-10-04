@@ -1,12 +1,12 @@
 # Safe Benchmark Execution Guide
 
-This document explains how to safely run genera benchmarks in environments with multiple mathematical tools (Sage, Wolfram Engine, PARI, FLINT) while avoiding version conflicts and ensuring proper isolation.
+This document explains how to safely run generapy benchmarks in environments with multiple mathematical tools (Sage, Wolfram Engine, PARI, FLINT) while avoiding version conflicts and ensuring proper isolation.
 
 ## Core Principle: Process Isolation
 
 **Every external tool runs in a separate, isolated process** to prevent:
 - Python namespace conflicts
-- mpmath/genera version mismatches
+- mpmath/generapy version mismatches
 - Shared state corruption
 - Cache interference
 
@@ -16,24 +16,24 @@ This document explains how to safely run genera benchmarks in environments with 
 
 **WRONG** - Never do this:
 ```python
-import genera
+import generapy
 import sage.all  # DANGER: Namespace collision!
 ```
 
 **RIGHT** - Use subprocess isolation:
 ```python
-# genera runs in this process
-import genera
+# generapy runs in this process
+import generapy
 
 # Sage runs in a separate worker process
 result = subprocess.run(['sage', '-python', 'worker.py'], ...)
 ```
 
-All benchmarks follow this pattern. The main process uses genera; external tools run in isolated workers.
+All benchmarks follow this pattern. The main process uses generapy; external tools run in isolated workers.
 
 ### 2. Sage-Specific Isolation
 
-**Critical**: Sage must NEVER import genera or mpmath from the development checkout.
+**Critical**: Sage must NEVER import generapy or mpmath from the development checkout.
 
 **Why?** Sage bundles its own mpmath version. Loading a different mpmath version causes:
 - Unpredictable numerical behavior
@@ -44,26 +44,26 @@ All benchmarks follow this pattern. The main process uses genera; external tools
 
 ```python
 # In benchmark_curves.py (main process)
-import genera  # Uses development version
+import generapy  # Uses development version
 
 # Worker launched with clean environment
 env = dict(os.environ)
-env.pop('PYTHONPATH', None)  # Remove genera from path
+env.pop('PYTHONPATH', None)  # Remove generapy from path
 env.pop('PYTHONHOME', None)
 
-# Sage worker runs in temporary directory OUTSIDE genera checkout
+# Sage worker runs in temporary directory OUTSIDE generapy checkout
 with tempfile.TemporaryDirectory(prefix='curve-benchmark-') as cwd:
     subprocess.Popen(['sage', '-python', 'worker.py'], cwd=cwd, env=env, ...)
 ```
 
 **Never:**
-- Add genera to Sage's `PYTHONPATH`
-- Run Sage workers from inside the genera repository
-- Import genera inside a Sage session
+- Add generapy to Sage's `PYTHONPATH`
+- Run Sage workers from inside the generapy repository
+- Import generapy inside a Sage session
 
 ### 3. Working Directory Isolation
 
-**Sage workers must start in a temporary directory outside the genera checkout.**
+**Sage workers must start in a temporary directory outside the generapy checkout.**
 
 From `benchmark_curves.py`:
 ```python
@@ -73,7 +73,7 @@ with tempfile.TemporaryDirectory(prefix='curve-benchmark-') as cwd:
     process = subprocess.Popen(command, cwd=cwd, ...)
 ```
 
-**Why?** Prevents Sage from accidentally finding and importing genera/mpmath from the current directory.
+**Why?** Prevents Sage from accidentally finding and importing generapy/mpmath from the current directory.
 
 ### 4. Wolfram Engine Isolation
 
@@ -114,12 +114,12 @@ Sage may need write access to `~/.sage/cache`. If running in a sandbox:
 
 ## Verifying Correct Isolation
 
-### Check genera Version
+### Check generapy Version
 
 ```python
 # In main process
-import genera
-print(genera.__version__)  # Should be your development version
+import generapy
+print(generapy.__version__)  # Should be your development version
 ```
 
 ### Check Sage is Using Its Own mpmath
@@ -128,10 +128,10 @@ print(genera.__version__)  # Should be your development version
 # Inside a Sage worker
 from sage.all import *
 import mpmath
-print(mpmath.__file__)  # Should be inside Sage installation, NOT genera
+print(mpmath.__file__)  # Should be inside Sage installation, NOT generapy
 ```
 
-If the path points to your genera checkout, **isolation has failed**.
+If the path points to your generapy checkout, **isolation has failed**.
 
 ## Concurrent Execution Prevention
 
@@ -152,7 +152,7 @@ fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)  # Fail if already locked
 ## Version Tracking
 
 Each benchmark records:
-- genera/mpmath version and git commit
+- generapy/mpmath version and git commit
 - External tool versions (Sage, Wolfram Engine, etc.)
 - System information (platform, Python version)
 
@@ -160,13 +160,13 @@ From `results.json`:
 ```json
 {
   "versions": {
-    "genera": "0.1.0.dev0+g1a2b3c4",
+    "generapy": "0.1.0.dev0+g1a2b3c4",
     "sage": "10.1",
     "python": "3.11.5"
   },
   "git_state": {
     "commit": "1a2b3c4...",
-    "status": "M src/genera/curves/periods.py"
+    "status": "M src/generapy/curves/periods.py"
   }
 }
 ```
@@ -183,11 +183,11 @@ From `results.json`:
 **Risk**: Different cases measured with different code.
 **Solution**: Don't edit code while benchmarks run. The harness detects source changes and marks results invalid.
 
-### ❌ Putting genera on Sage's PYTHONPATH
+### ❌ Putting generapy on Sage's PYTHONPATH
 **Risk**: Sage imports wrong mpmath, all Sage results invalid.
 **Solution**: Never set PYTHONPATH. Let Sage use its bundled mpmath.
 
-### ❌ Running Sage workers from genera directory
+### ❌ Running Sage workers from generapy directory
 **Risk**: Python imports from current directory, namespace collision.
 **Solution**: Workers automatically use temporary directories. Don't override `cwd`.
 
@@ -197,7 +197,7 @@ From `results.json`:
 
 ### ❌ Running benchmarks in CI without external tools
 **Risk**: CI tries to run Sage/Wolfram benchmarks without installations.
-**Solution**: Use `--engines genera` for genera-only benchmarks in CI.
+**Solution**: Use `--engines generapy` for generapy-only benchmarks in CI.
 
 ## Results Management
 
@@ -305,7 +305,7 @@ with tempfile.TemporaryDirectory() as cwd:
 
 **Key takeaways:**
 1. External tools run in isolated subprocess workers, never in the main process
-2. Sage workers use temporary directories outside genera checkout
+2. Sage workers use temporary directories outside generapy checkout
 3. Clean environment variables prevent PYTHONPATH contamination
 4. One benchmark instance per directory (advisory lock)
 5. Only commit aggregated markdown reports, never raw JSON

@@ -29,7 +29,7 @@ H=\frac{p_1^2+p_2^2}{2}
                    +\frac{C_2^2}{q_2^2}\right).
 $$
 
-The comparison is deliberately end to end: Genera constructs the spectral
+The comparison is deliberately end to end: Generapy constructs the spectral
 curve's periods, evaluates the analytic Kleinian solution, converts that
 solution back to a spectral divisor and integrates the ODE without using the
 analytic values again.
@@ -67,13 +67,13 @@ needed at the Kleinian interface.
 
 ## 3. Analytic Kleinian solution
 
-The Genera differential basis is ordered as
+The Generapy differential basis is ordered as
 
 $$
 (du_1,du_2)^T=(dx/y,x\,dx/y)^T.
 $$
 
-Consequently CEEK's one-based quantities map to the zero-based Genera API as
+Consequently CEEK's one-based quantities map to the zero-based Generapy API as
 
 | CEEK        | `kleinian_p` indices |
 | ----------- | -------------------- |

@@ -5,13 +5,13 @@ from tests._support import make_curve
 import pytest
 
 from mpmath import mp
-from genera.curves import continuation
-from genera.curves.geometry import (
+from generapy.curves import continuation
+from generapy.curves.geometry import (
     _check_voronoi_disk, _clip_voronoi_halfplane, _finish_voronoi_cell,
     _register_voronoi_vertex, _voronoi_plane_graph,
 )
-from genera.curves._records import _PlaneGraph
-from genera.curves.polynomial import _prepare_plane_curve
+from generapy.curves._records import _PlaneGraph
+from generapy.curves.polynomial import _prepare_plane_curve
 
 
 @pytest.mark.parametrize("path,options,message", [

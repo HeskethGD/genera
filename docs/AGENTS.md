@@ -2,7 +2,7 @@
 
 - Make literature examples readable as mathematical walkthroughs in the
   online documentation. Connect the mathematical problem, conventions,
-  Genera's public API and numerical validation, with clear attribution.
+  Generapy's public API and numerical validation, with clear attribution.
 - Add the papers used by each walkthrough to `references.rst` and cite those
   shared entries from the example page. Verify bibliographic details against
   the paper, its publisher or its arXiv record; reuse existing citation entries.
@@ -33,7 +33,7 @@
   reference files or temporary data folders.
 - Include source excerpts directly from the scripts where useful. Ordinary
   displayed code is explanatory; use executable doctest blocks for the
-  calculation and meaningful assertions that keep it in sync with Genera.
+  calculation and meaningful assertions that keep it in sync with Generapy.
 - Plots execute during Sphinx HTML builds. Executable `>>>` blocks are checked
   by pytest's documentation doctests and Sphinx's doctest builder. HTML and
   doctest builds execute independently, so account for both costs.

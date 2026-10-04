@@ -10,7 +10,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0,str(HERE))
 sys.path.insert(0,str(HERE.parents[1]/'src'))
 from mpmath import mp
-import genera
+import generapy
 from curve_cases import catalog, x_transform
 from validation import basis_change, compare, symplectic
 from benchmark_curves import report, worker, REPO, acquire_run_lock
@@ -23,7 +23,7 @@ class HarnessChecks(unittest.TestCase):
             records = []
             for extra in (15, 30):
                 with mp.workdps(digits+extra):
-                    request = dict(case=case,engine='genera',bits=mp.prec,repo=str(REPO))
+                    request = dict(case=case,engine='generapy',bits=mp.prec,repo=str(REPO))
                 data = worker(request,'unused',10)
                 self.assertEqual(data['status'],'ok',data)
                 self.assertEqual(data['working_bits'], request['bits'])
@@ -64,15 +64,15 @@ class HarnessChecks(unittest.TestCase):
 
     def test_worker_fraction_import_path_and_timeout(self):
         case = catalog()['hyper-g1-lemniscatic']
-        request = dict(case=case,engine='genera',bits=70,repo=str(REPO))
+        request = dict(case=case,engine='generapy',bits=70,repo=str(REPO))
         data = worker(request,'unused',10)
         self.assertEqual(data['status'],'ok',data)
         self.assertEqual(data['actual_engine'],'hyperelliptic')
-        self.assertTrue(Path(data['genera_path']).is_relative_to(REPO))
+        self.assertTrue(Path(data['generapy_path']).is_relative_to(REPO))
         self.assertEqual(worker(request,'unused',0.00001)['status'],'timeout')
 
     def test_report_never_ranks_failed_accuracy_and_labels_hyperelliptic(self):
-        rows = [dict(case='a',digits=20,implementation='genera',actual_engine='hyperelliptic',
+        rows = [dict(case='a',digits=20,implementation='generapy',actual_engine='hyperelliptic',
                      status='ok',seconds=1,accuracy={'status':'failed'}),
                 dict(case='a',digits=20,implementation='sage',status='ok',seconds=2,
                      accuracy={'status':'passed'})]

@@ -2,12 +2,12 @@ from tests._support import make_curve
 import pytest
 
 from mpmath import mp
-from genera.curves._hyperelliptic import (
+from generapy.curves._hyperelliptic import (
     _hyperelliptic_abel_map, _hyperelliptic_periods,
 )
-from genera.curves._hyperelliptic import integration as hyperelliptic_integration
-from genera.curves._hyperelliptic import jacobian as hyperelliptic_jacobian
-from genera.curves._hyperelliptic import model as hyperelliptic_model
+from generapy.curves._hyperelliptic import integration as hyperelliptic_integration
+from generapy.curves._hyperelliptic import jacobian as hyperelliptic_jacobian
+from generapy.curves._hyperelliptic import model as hyperelliptic_model
 
 
 def hyperelliptic_periods(coefficients, **kwargs):

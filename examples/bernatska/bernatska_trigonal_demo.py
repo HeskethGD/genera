@@ -4,14 +4,14 @@
 This is Example 3 and Examples 3a--3b of J. Bernatska, "Computation of
 P-Functions on Plane Algebraic Curves" (arXiv:2407.05632v4).
 
-Run from the Genera repository root with
+Run from the Generapy repository root with
 
     .venv/bin/python -m examples.bernatska.bernatska_trigonal_demo
 """
 
 from dataclasses import dataclass
 
-from genera import Curve, kleinian_p
+from generapy import Curve, kleinian_p
 from mpmath import mp
 
 

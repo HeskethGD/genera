@@ -383,7 +383,7 @@ def kleinian_sigma(u, omega=None, tau=None, kappa=None, characteristic=None,
     ``omega`` is the first-kind a-half-period matrix, ``tau`` is the
     normalized Riemann matrix, and ``kappa`` is the symmetric matrix
     :math:`\eta\omega^{-1}`. The characteristic uses the literal
-    ``(a, b)`` convention of :func:`~genera.rtheta`.
+    ``(a, b)`` convention of :func:`~generapy.rtheta`.
 
     ``curve`` accepts a ``Curve`` or a sparse polynomial mapping. Its periods,
     second-kind matrix, and Riemann characteristic are selected together;
@@ -464,7 +464,7 @@ def kleinian_baker_akhiezer(u, abel=None, second_kind=None, omega=None,
     ``Curve.abel_map_kind_2``, using the same
     target and reduction choice. The
     remaining inputs use the same conventions as
-    :func:`~genera.kleinian_sigma`. Sigma is evaluated with its canonical
+    :func:`~generapy.kleinian_sigma`. Sigma is evaluated with its canonical
     ``normalization="hyperelliptic"``; this is required because its
     multiplicative constant does not cancel from the normalized expression.
     The denominator is singular when ``u`` lies on the sigma divisor.
@@ -545,19 +545,19 @@ def kleinian_sigma_jet(u, omega=None, tau=None, kappa=None, order=None,
         \end{aligned}
 
     ``order`` must be a nonnegative integer. The keys use the graded reverse
-    lexicographic ordering of :func:`~genera.rtheta_jet`; the values are not
+    lexicographic ordering of :func:`~generapy.rtheta_jet`; the values are not
     divided by multi-index factorials. All theta derivatives are accumulated
     in one theta jet. Unlike logarithmic derivatives such as the Kleinian
     zeta and P-functions, a sigma jet remains defined on the theta divisor.
 
     Period, characteristic, and normalization conventions are the same as
-    for :func:`~genera.kleinian_sigma`.
+    for :func:`~generapy.kleinian_sigma`.
 
     **Example**
 
     Evaluate the sigma value, gradient, and Hessian together::
 
-        >>> from genera import kleinian_sigma_jet
+        >>> from generapy import kleinian_sigma_jet
         >>> omega = [[1, 0], [0, 1]]
         >>> tau = [[1j, 0], [0, 1.2j]]
         >>> kappa = [[0.2, 0.1], [0.1, 0.3]]
@@ -613,7 +613,7 @@ def kleinian_zeta(u, omega=None, tau=None, kappa=None, characteristic=None, *,
 
     This evaluates :math:`\nabla_u\log\sigma(u)`. The result is an mpmath
     column matrix. Period and characteristic conventions are the same as for
-    :func:`~genera.kleinian_sigma`.
+    :func:`~generapy.kleinian_sigma`.
 
     """
     ctx, omega, tau, kappa, characteristic, normalization = (
@@ -662,7 +662,7 @@ def kleinian_p(u, omega=None, tau=None, kappa=None, indices=None,
     requested order.
 
     Period and characteristic conventions are the same as for
-    :func:`~genera.kleinian_sigma`.
+    :func:`~generapy.kleinian_sigma`.
 
     """
     ctx, omega, tau, kappa, characteristic, normalization = (

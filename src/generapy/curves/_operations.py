@@ -1,4 +1,4 @@
-"""Internal orchestration for :class:`~genera.curves.Curve`."""
+"""Internal orchestration for :class:`~generapy.curves.Curve`."""
 
 from ._context import _curve_cache_state
 from ._hyperelliptic import _hyperelliptic_abel_map

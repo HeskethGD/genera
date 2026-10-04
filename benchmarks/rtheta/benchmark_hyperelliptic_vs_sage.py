@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare genera hyperelliptic periods with two Sage implementations.
+"""Compare generapy hyperelliptic periods with two Sage implementations.
 
 Run from the repository root with the normal mpmath environment::
 
@@ -33,10 +33,10 @@ DEFAULT_REPORT = SCRIPT_DIR / "hyperelliptic_vs_sage.md"
 DEFAULT_SAGE = "/usr/local/bin/sage"
 sys.path.insert(0, str(REPO_ROOT/'src'))
 
-import genera
+import generapy
 from mpmath import mp
-genera_version = genera.__version__
-from genera.curves._stages import (  # noqa: E402
+generapy_version = generapy.__version__
+from generapy.curves._stages import (  # noqa: E402
     _stage_hyperelliptic_periods,
 )
 
@@ -194,8 +194,8 @@ def decoded_matrix(data):
 
 
 def mpmath_periods(coefficients):
-    """Return the genera first-kind half-period matrix."""
-    from genera import Curve
+    """Return the generapy first-kind half-period matrix."""
+    from generapy import Curve
     _stage_hyperelliptic_periods.cache_clear()
     data = Curve({(0, 2): 1, **{(i, 0): -c for i, c in enumerate(coefficients)}}).periods_kind_1()
     omega, omega_prime = data.omega, data.omega_prime
@@ -276,7 +276,7 @@ def markdown(rows, args, sage):
         f"- Date: {datetime.datetime.now(datetime.timezone.utc).isoformat()}",
         f"- Platform: {platform.platform()}",
         f"- Python: {platform.python_version()}",
-        f"- mpmath: {genera_version}",
+        f"- mpmath: {generapy_version}",
         f"- Sage: `{sage}`",
         f"- mpmath timing: median of {args.mpmath_trials} trials",
         f"- Sage timing: median of {args.sage_trials} trials inside one Sage "

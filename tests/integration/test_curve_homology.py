@@ -4,20 +4,20 @@ from tests._support import make_curve
 
 import pytest
 
-import genera.curves.homology as curve_homology
+import generapy.curves.homology as curve_homology
 from mpmath import mp
-from genera.curves._stages import _stage_geometric_cover
-from genera.curves.homology import (
+from generapy.curves._stages import _stage_geometric_cover
+from generapy.curves.homology import (
     _brahana_canonical_words, _canonical_ribbon_polygon,
     _expand_cut_system_word, _geometric_ribbon_graph, _integer_matrix_rank,
     _ribbon_tree_cotree_cut_system,
 )
-from genera.curves.integration import _integrate_geometric_loops_iterated
-from genera.curves._records import (
+from generapy.curves.integration import _integrate_geometric_loops_iterated
+from generapy.curves._records import (
     _GeometricCover, _GeometricEdge, _GeometricRibbonGraph, _PlaneGraph,
 )
-from genera.curves.homology import _ribbon_cycle_intersection, _tree_path
-from genera.curves.polynomial import _prepare_plane_curve
+from generapy.curves.homology import _ribbon_cycle_intersection, _tree_path
+from generapy.curves.polynomial import _prepare_plane_curve
 
 
 @pytest.mark.parametrize("sheet", (0, 1))

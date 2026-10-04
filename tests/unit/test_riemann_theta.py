@@ -2,8 +2,8 @@ from itertools import product
 
 import pytest
 
-from genera import rtheta, rtheta_jet
-from genera.riemann_theta import (
+from generapy import rtheta, rtheta_jet
+from generapy.riemann_theta import (
     _apply_reduction, _derivative_reduction_threshold, _matrix_tuple,
     _ellipsoid_rows, _multiindices, _partial_inversion, _point_estimate,
     _rtheta_derivative_radius, _rtheta_derivatives, _rtheta_reduction_data,

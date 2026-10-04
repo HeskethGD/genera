@@ -23,7 +23,7 @@ REPO_ROOT = SCRIPT_DIR.parents[1]
 DEFAULT_REPORT = SCRIPT_DIR / "rtheta_vs_jtheta.md"
 sys.path.insert(0, str(REPO_ROOT/'src'))
 
-import genera
+import generapy
 from mpmath import mp  # noqa: E402
 
 

@@ -6,7 +6,7 @@ Lemma 5.1 in J. C. Eilbeck, V. Z. Enolskii, S. Matsutani, Y. Onishi and
 E. Previato, "Abelian functions for trigonal curves of genus three"
 (arXiv:math/0610019v2).  The curves and evaluation points are chosen for
 this example alone: the right-hand sides are transcribed from the lemma
-statement itself and the left-hand sides are computed by Genera's general
+statement itself and the left-hand sides are computed by Generapy's general
 plane-curve and Kleinian machinery.  No period values, characteristics or
 P-function values are taken from the paper or from any other example.
 
@@ -19,7 +19,7 @@ with the holomorphic basis of equation (2.2)
 
     omega_1 = dx/f_y,  omega_2 = x*dx/f_y,  omega_3 = y*dx/f_y,
 
-in exactly that order, so Genera's zero-based sigma-derivative index i is
+in exactly that order, so Generapy's zero-based sigma-derivative index i is
 the paper's one-based index i+1.  The sigma function of Section 3 of the
 paper uses the second-kind differentials eta_j = h_j(x, y)/f_y * dx with
 their only pole at the unique point at infinity; the displayed triple
@@ -88,7 +88,7 @@ The Lemma 5.1 identities hold for every u in C**3, so they are evaluated
 at generic points with a single batched kleinian_p call per point; no
 Abel inversion is needed.
 
-Run from the Genera repository root, for example
+Run from the Generapy repository root, for example
 
     .venv/bin/python -m examples.onishi_trigonal_genus_3.lemma_5_1_demo
     .venv/bin/python -m examples.onishi_trigonal_genus_3.lemma_5_1_demo \
@@ -99,7 +99,7 @@ import argparse
 import time
 from types import SimpleNamespace
 
-from genera import Curve, kleinian_p, kleinian_sigma
+from generapy import Curve, kleinian_p, kleinian_sigma
 from mpmath import mp
 
 # Zero-based kleinian_p indices for the paper's one-based P-functions:
@@ -759,7 +759,7 @@ def run_curve(name, moduli, options):
             data, characteristic, namespace, relations, points[0])
         print("kappa closure residual at the fitting point:",
               mp.nstr(closure, 4))
-        print("fitted kappa (Genera sign convention):")
+        print("fitted kappa (Generapy sign convention):")
         for row in range(3):
             print("   ", [mp.nstr(kappa[row, column], 8)
                           for column in range(3)])

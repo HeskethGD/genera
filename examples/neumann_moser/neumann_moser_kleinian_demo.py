@@ -55,14 +55,14 @@ trajectory on the compact real component of the Jacobian, where the
 Kleinian functions stay real and bounded; the constant first Abelian
 coordinate is a free phase.
 
-Run from the Genera repository root with
+Run from the Generapy repository root with
 
     .venv/bin/python -m examples.neumann_moser.neumann_moser_kleinian_demo
 """
 
 import argparse
 
-from genera import Curve, kleinian_p
+from generapy import Curve, kleinian_p
 from mpmath import mp
 
 from examples._rk4 import rk4_step
@@ -138,7 +138,7 @@ def data_for_phase(data, first_coordinate):
 def analytic_state(x, data):
     """Return u1, u2, v1, v2, w1, w2, w3 from the Kleinian solution.
 
-    The paper's z_1 is the second Genera Abelian coordinate (the one the
+    The paper's z_1 is the second Generapy Abelian coordinate (the one the
     flow advances, exactly as in the Manakov demo) and z_3 is the first,
     so wp_2 = -d^2 log sigma / dz_1^2, wp_4 = -d^2 log sigma / dz_1 dz_3
     and wp_3,3 = -d^2 log sigma / dz_3^2 map to the kleinian_p coordinate

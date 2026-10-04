@@ -24,7 +24,7 @@ def run(request):
     case, engine, bits = request['case'], request['engine'], request['bits']
     if engine == 'sage':
         from sage.all import Curve, PolynomialRing, QQ, version
-        import mpmath  # Sage's bundled mpmath, not genera
+        import mpmath  # Sage's bundled mpmath, not generapy
         ring = PolynomialRing(QQ, names=('x','y'))
         x, y = ring.gens()
         def poly(terms):
@@ -41,18 +41,18 @@ def run(request):
         return dict(status='ok', seconds=seconds, periods=encode(periods), basis=basis,
                     genus=int(surface.genus), actual_engine='sage', marking='sage',
                     version=version(), mpmath_path=mpmath.__file__)
-    # Only the genera worker adds the checkout to its import path.
+    # Only the generapy worker adds the checkout to its import path.
     sys.path.insert(0, str(Path(request['repo'])/'src'))
-    import genera
-    from genera import Curve
+    import generapy
+    from generapy import Curve
     from mpmath import mp
     mp.prec = bits
-    genera_path = Path(genera.__file__).resolve()
-    if not genera_path.is_relative_to(Path(request['repo']).resolve()):
-        raise RuntimeError('genera worker imported the wrong checkout')
+    generapy_path = Path(generapy.__file__).resolve()
+    if not generapy_path.is_relative_to(Path(request['repo']).resolve()):
+        raise RuntimeError('generapy worker imported the wrong checkout')
     with mp.workprec(53):
         Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1}).periods_kind_1()
-    from genera.curves import _stages
+    from generapy.curves import _stages
     for stage in vars(_stages).values():
         if callable(stage) and hasattr(stage,'cache_clear'):
             stage.cache_clear()
@@ -60,13 +60,13 @@ def run(request):
         return mp.fsum(mp.mpf(c)*x**i*y**j for i,j,c in terms)
     tick = time.perf_counter()
     terms = {(i,j):mp.mpf(c) for i,j,c in case['terms']}
-    curve = Curve(terms)
     supplied = case.get('numerators')
     forms = None
     if supplied is not None:
         derivative = [[i,j-1,str(mp.mpf(c)*j)] for i,j,c in case['terms'] if j]
         forms = tuple((lambda x,y,h=h: poly(h,x,y)/poly(derivative,x,y)) for h in supplied)
-    data = curve.periods_kind_1(forms)
+    curve = Curve(terms, differentials_kind_1=forms)
+    data = curve.periods_kind_1()
     seconds = time.perf_counter()-tick
     full = mp.matrix([list(a)+list(b) for a,b in zip((2*data.omega).tolist(),(2*data.omega_prime).tolist())])
     if supplied is not None:
@@ -79,7 +79,7 @@ def run(request):
         basis = [[[f.numerator[0],f.numerator[1],'1']] for f in data.differentials]
     return dict(status='ok', seconds=seconds, periods=encode(full), basis=basis,
                 genus=data.genus, actual_engine=data.engine, marking=data.marking,
-                version=genera.__version__, genera_path=str(genera_path),
+                version=generapy.__version__, generapy_path=str(generapy_path),
                 validation=curve.validate(data).passed,
                 symmetry_residual=str(data.symmetry_residual),
                 minimum_imaginary_eigenvalue=str(min(data.imaginary_eigenvalues)))

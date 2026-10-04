@@ -40,7 +40,7 @@ the middle w' range runs to n; and w_{n+1}' = 2 Gamma v_n. The genus-three
 identities checked below additionally exercise wp_6, wp_{3,3} and wp_{3,5},
 which have no genus-two counterparts.
 
-The paper's z_1, z_3, z_5 are Genera Abelian coordinates 2, 1, 0, so
+The paper's z_1, z_3, z_5 are Generapy Abelian coordinates 2, 1, 0, so
 wp_2 = -d^2 log sigma / dz_1^2 maps to kleinian_p indices (2, 2), wp_4 to
 (1, 2) and wp_6 to (0, 2), with ' appending a 2 and '' appending two.
 
@@ -56,7 +56,7 @@ the divisor x-coordinates, the conserved relation U*W + V^2 = F/4 gives the
 sheets y_i = 2*V(x_i), and the Abel image reproduces the selected phase
 modulo the period lattice and all ten state coordinates.
 
-Run from the Genera repository root with
+Run from the Generapy repository root with
 
     .venv/bin/python -m examples.neumann_moser.neumann_moser_genus_three_demo
 """
@@ -64,7 +64,7 @@ Run from the Genera repository root with
 import argparse
 from dataclasses import dataclass
 
-from genera import Curve, kleinian_p
+from generapy import Curve, kleinian_p
 from mpmath import mp
 
 from examples._rk4 import rk4_step, rk4_trajectory
@@ -140,7 +140,7 @@ def data_for_phase(data, first_coordinate):
 def analytic_state(x, data):
     """Return the ten Neumann-Moser coordinates from the Kleinian solution.
 
-    The paper's z_1 is the last Genera Abelian coordinate (the one the
+    The paper's z_1 is the last Generapy Abelian coordinate (the one the
     flow advances; the genus-three analogue of the second coordinate in
     the genus-two demo), z_3 is the middle coordinate and z_5 the first,
     so wp_2, wp_4 and wp_6 map to the kleinian_p coordinate index pairs

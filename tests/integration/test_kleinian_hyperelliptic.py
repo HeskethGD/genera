@@ -1,11 +1,11 @@
 from tests._support import make_curve
 import pytest
 
-from genera import (
+from generapy import (
     Curve, kleinian_p, kleinian_sigma,
     kleinian_sigma_jet, kleinian_zeta,
 )
-from genera.kleinian import kleinian_baker_akhiezer
+from generapy.kleinian import kleinian_baker_akhiezer
 from mpmath import mp
 
 

@@ -6,14 +6,14 @@ import warnings
 
 import pytest
 
-import genera.curves._operations as curve_operations
-from genera.curves import (
+import generapy.curves._operations as curve_operations
+from generapy.curves import (
     CurveBranchLocus, CurveGenus, CurveHomology, CurveMonodromy, CurvePlace,
     CurveRiemannConstant, CurveAbelMapKind1, CurveAbelMapKind2,
 )
-from genera.curves.polynomial import _prepare_plane_curve
-from genera.curves._stages import _stage_geometric_periods
-from genera.curves.jacobian import _finite_geometric_abel_value
+from generapy.curves.polynomial import _prepare_plane_curve
+from generapy.curves._stages import _stage_geometric_periods
+from generapy.curves.jacobian import _finite_geometric_abel_value
 from mpmath import mp
 
 
@@ -314,7 +314,7 @@ def test_unreduced_abel_record_does_not_request_periods(monkeypatch):
         raise AssertionError("an unreduced Abel map must not request period matrices")
 
     monkeypatch.setattr(curve_operations, "periods", periods_forbidden)
-    from genera.curves._hyperelliptic import operations as specialized
+    from generapy.curves._hyperelliptic import operations as specialized
     monkeypatch.setattr(specialized, "_first_kind_periods", periods_forbidden)
     for base in (None, (ctx.mpf(3), ctx.sqrt(24))):
         result = curve.abel_map_kind_1((ctx.mpf(2), ctx.sqrt(6)), base_place=base)

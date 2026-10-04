@@ -39,7 +39,7 @@ class Curve:
     --------
     A genus-one curve:
 
-    >>> from genera import Curve
+    >>> from generapy import Curve
     >>> # F(x, y) = y**2 + x - x**3
     >>> polynomial = {(0, 2): 1, (1, 0): 1, (3, 0): -1}
     >>> curve = Curve(polynomial=polynomial)
@@ -177,7 +177,7 @@ class Curve:
         The lemniscatic curve :math:`y^2 = x^3 - x` has a two-sheeted
         projection with three finite branch values::
 
-            >>> from genera import Curve
+            >>> from generapy import Curve
             >>> locus = Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1}).branch_locus
             >>> locus.degree
             2
@@ -207,7 +207,7 @@ class Curve:
         Each finite branch value of the lemniscatic curve
         :math:`y^2 = x^3 - x` exchanges its two sheets, as does infinity::
 
-            >>> from genera import Curve
+            >>> from generapy import Curve
             >>> monodromy = Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1}).monodromy
             >>> monodromy.genus
             1
@@ -234,7 +234,7 @@ class Curve:
         total ramification. The Riemann-Hurwitz balance :math:`2g-2 = -2d+r`
         can be verified directly::
 
-            >>> from genera import Curve
+            >>> from generapy import Curve
             >>> Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1}).genus_data
             CurveGenus(genus=1, degree=2, ramification=4)
         """
@@ -252,7 +252,7 @@ class Curve:
 
         The lemniscatic curve :math:`y^2 = x^3 - x` uses Baker marking::
 
-            >>> from genera import Curve
+            >>> from generapy import Curve
             >>> homology = Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1}).homology
             >>> homology.genus, homology.marking
             (1, 'baker')
@@ -303,7 +303,7 @@ class Curve:
 
         The lemniscatic curve has normalized period matrix ``tau = i``::
 
-            >>> from genera import Curve
+            >>> from generapy import Curve
             >>> from mpmath import mp
             >>> mp.dps = 15
             >>> curve = Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1})
@@ -393,7 +393,7 @@ class Curve:
         ``curve.periods_kind_1().tau``; see
         :meth:`Curve.periods_kind_1` for the input conventions.
 
-            >>> from genera import Curve
+            >>> from generapy import Curve
             >>> from mpmath import mp
             >>> mp.dps = 15
             >>> tau = Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1}).riemann_matrix()
@@ -424,7 +424,7 @@ class Curve:
 
         In genus one the answer is the odd half-period ``(1+tau)/2``::
 
-            >>> from genera import Curve
+            >>> from generapy import Curve
             >>> from mpmath import mp
             >>> mp.dps = 15
             >>> curve = Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1})
@@ -458,7 +458,7 @@ class Curve:
         integration residuals use recorded values. Tolerances use the
         current context precision; curve data is not recomputed.
 
-            >>> from genera import Curve
+            >>> from generapy import Curve
             >>> curve = Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1})
             >>> report = curve.validate(curve.periods_kind_1())
             >>> report.passed
@@ -480,7 +480,7 @@ class Curve:
         monodromy base point they agree with the labels used by
         :attr:`Curve.monodromy`.
 
-        >>> from genera import Curve
+        >>> from generapy import Curve
             >>> from mpmath import mp
         >>> mp.dps = 15
         >>> curve = Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1})
@@ -507,7 +507,7 @@ class Curve:
         lie on the sheet reached by continuation; otherwise ``ValueError`` is
         raised.
 
-        >>> from genera import Curve
+        >>> from generapy import Curve
             >>> from mpmath import mp
         >>> mp.dps = 15
         >>> curve = Curve({(0, 2): 1, (1, 0): -1})
@@ -535,7 +535,7 @@ class Curve:
         holomorphic form per genus; its integrals only need to converge along
         this path. See :ref:`custom-differential-bases` for the callable convention.
 
-        >>> from genera import Curve
+        >>> from generapy import Curve
             >>> from mpmath import mp
         >>> mp.dps = 15
         >>> curve = Curve({(0, 2): 1, (1, 0): -1})
@@ -597,7 +597,7 @@ class Curve:
         when reduction is disabled. ``engine`` and ``marking`` identify the
         calculation route and cycle convention.
 
-        >>> from genera import Curve
+        >>> from generapy import Curve
             >>> from mpmath import mp
         >>> mp.dps = 15
         >>> curve = Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1})
@@ -684,7 +684,7 @@ class Curve:
         by ``[I, tau]``.  The returned ``CurveLatticeReduction`` record contains
         the equivalent vector and the integer lattice shift ``(m, n)``.
 
-        >>> from genera import Curve
+        >>> from generapy import Curve
             >>> from mpmath import mp
         >>> mp.dps = 15
         >>> curve = Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1})
@@ -746,7 +746,7 @@ class Curve:
         the working precision.  The chart must parametrize ``curve``: the
         cutoff point is checked to lie on the curve.
 
-        >>> from genera import Curve
+        >>> from generapy import Curve
             >>> from mpmath import mp
         >>> mp.dps = 15
         >>> curve = Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1})

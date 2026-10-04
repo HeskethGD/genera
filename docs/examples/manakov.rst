@@ -55,7 +55,7 @@ with marked parameters :math:`a_1=3/4`, :math:`a_2=3/16`, and
 The runnable script expands :math:`F` into ascending polynomial
 coefficients. Its period construction uses one curve object throughout::
 
-   from genera import Curve, kleinian_p
+   from generapy import Curve, kleinian_p
 
    curve = Curve({(0, 2): 1, **{(i, 0): -c for i, c in enumerate(coefficients)}})
    first = curve.periods_kind_1()
@@ -75,7 +75,7 @@ identities.
 The Kleinian solution
 ----------------------
 
-Genera orders the Abelian differential basis as :math:`(ds/y,s\,ds/y)`.
+Generapy orders the Abelian differential basis as :math:`(ds/y,s\,ds/y)`.
 The paper's one-based indices become zero-based API indices:
 
 .. list-table::
@@ -127,7 +127,7 @@ positivity before forming the physical state.
 
 The paper prints a doubled Abelian velocity below equation (2.12), while
 equations (3.18)--(3.19) identify :math:`x=u_2`. The example uses unit
-velocity in Genera's second coordinate, as checked by the stationary ODE
+velocity in Generapy's second coordinate, as checked by the stationary ODE
 comparison. Details of this convention and the fourth-order Kleinian
 identities are recorded in ``examples/manakov/walkthrough.md``.
 

@@ -1,1 +1,1 @@
-"""Integration tests for Genera."""
+"""Integration tests for Generapy."""

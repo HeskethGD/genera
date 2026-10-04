@@ -4,14 +4,14 @@ Bernatska's genus-three trigonal curve
 This example follows Examples 3 and 3a--3b of J. Bernatska,
 *Computation of P-Functions on Plane Algebraic Curves* [Bernatska2024]_.
 Starting with a non-hyperelliptic
-plane curve, Genera computes its branch locus, monodromy, homology and
+plane curve, Generapy computes its branch locus, monodromy, homology and
 periods, then evaluates the second- and third-order Kleinian P-functions
 printed in the paper.
 
 The comparison illustrates two conventions that matter in practical use:
-the paper and Genera can choose different homology bases, and Bernatska's
+the paper and Generapy can choose different homology bases, and Bernatska's
 full periods must be converted to the half-period inputs of
-:func:`genera.kleinian_p`.
+:func:`generapy.kleinian_p`.
 
 The curve and its branch locus
 -------------------------------
@@ -22,7 +22,7 @@ Bernatska's equation (73) is the trigonal :math:`(3,4)` curve
 
    f(x,y)=-y^3+x^4+3x^3+7x^2+16x+9+y(4x^2+5x+11)=0.
 
-Genera accepts a sparse mapping from ``(x_power, y_power)`` to the
+Generapy accepts a sparse mapping from ``(x_power, y_power)`` to the
 coefficient. The mapping below is included directly from the runnable
 script:
 
@@ -45,7 +45,7 @@ Its finite branch values satisfy
 
    27P(x)^2-4Q(x)^3=0.
 
-Genera finds these values from the curve equation; the paper's rounded
+Generapy finds these values from the curve equation; the paper's rounded
 branch values are used only for comparison. The result consists of two
 real points and three complex-conjugate pairs. The figure shows the
 computed branch values in the projection plane, rather than a choice of
@@ -109,7 +109,7 @@ where
 
 The construction uses the mpmath context explicitly::
 
-   from genera import Curve
+   from generapy import Curve
    from mpmath import mp
 
    first_kind, second_kind = differentials()
@@ -120,7 +120,7 @@ The construction uses the mpmath context explicitly::
 
 Here ``trigonal_curve`` and ``differentials`` are helpers in the complete
 example. The returned records contain mutually compatible half-periods,
-normalized periods and second-kind data. In Genera's notation,
+normalized periods and second-kind data. In Generapy's notation,
 
 .. math::
 
@@ -178,7 +178,7 @@ For Example 3a, the paper supplies the Abelian vector
    0.258194+0.268653i
    \end{pmatrix}.
 
-The literal theta characteristic used by Genera is
+The literal theta characteristic used by Generapy is
 
 .. math::
 
@@ -199,14 +199,14 @@ call. The runnable source shows both required convention conversions:
 In this excerpt, ``omega`` denotes Bernatska's full matrix
 :math:`\Omega`, and ``kappa`` denotes :math:`\varkappa_{\mathrm{paper}}`.
 Dividing ``omega`` by two supplies half-periods. Negating ``kappa`` matches
-Genera's sigma convention. The integer indices are zero-based: for example,
+Generapy's sigma convention. The integer indices are zero-based: for example,
 ``(0, 0)`` denotes the paper's :math:`\wp_{11}`.
 
 The calculation is repeated with the different Abelian vector of Example
 3b, checking another eight P-function values from equation (91). In both
 cases the Abel vector and characteristic come from the paper and use its
 homology basis and base point. They must not be mixed directly with the
-characteristic returned for Genera's automatically marked curve. This
+characteristic returned for Generapy's automatically marked curve. This
 example computes the periods from the curve, but does not reconstruct the
 paper's divisors or their Abelian integration paths.
 
@@ -280,5 +280,5 @@ From the repository root::
    python -m examples.bernatska.bernatska_trigonal_demo
 
 This prints the branch permutations, cycle transformation and full
-validation diagnostics. Genera and mpmath are sufficient; Matplotlib is
+validation diagnostics. Generapy and mpmath are sufficient; Matplotlib is
 imported only when requesting a figure.

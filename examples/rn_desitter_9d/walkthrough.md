@@ -84,7 +84,7 @@ The chosen $u_8$ gives five real finite branch points and one complex conjugate 
 
 ## 3. Inversion on the theta divisor
 
-For the differential basis used by both EHKL and Genera,
+For the differential basis used by both EHKL and Generapy,
 
 $$
 (du_1,du_2,du_3)^T=(dx/y,x\,dx/y,x^2\,dx/y)^T,
@@ -112,7 +112,7 @@ $$
 \sigma_3(\boldsymbol u)=0.
 $$
 
-The Genera coordinates are zero based, so the derivatives used in the code are
+The Generapy coordinates are zero based, so the derivatives used in the code are
 
 | EHKL quantity | `kleinian_sigma_jet` key |
 | --- | --- |

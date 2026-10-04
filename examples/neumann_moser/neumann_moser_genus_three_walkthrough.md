@@ -1,4 +1,4 @@
-# Solving the genus-three Neumann-Moser system with Genera Kleinian functions
+# Solving the genus-three Neumann-Moser system with Generapy Kleinian functions
 
 This note walks through the genus-three demo in this folder (`neumann_moser_genus_three_demo.py`) end to end. It parallels `walkthrough.md`, the genus-two companion: the printed-formula corrections, the index convention and the verification strategy established there carry over verbatim, so this note spells out only the genuinely new genus-three material. The reference is again P. G. Baron, [arXiv:2402.18079](https://arxiv.org/abs/2402.18079), with the solution theory quoted from V. M. Buchstaber, [arXiv:2402.09218](https://arxiv.org/abs/2402.09218); part 18 records the corrections and part 19 the Abel-map closure.
 
@@ -17,7 +17,7 @@ $$
 
 The repairs to the paper's expanded equations carry over unchanged: the middle $\dot w$ range runs to $n$ and the last equation is $\dot w_{n+1} = 2\Gamma v_n$. The system is the 5-stationary KdV hierarchy, with $\Gamma = 2\wp_2$ its KdV solution.
 
-## 2. The curve and the Genera data
+## 2. The curve and the Generapy data
 
 The canonical curve is now of degree seven, with no $x^6$ term so that the seven branch points sum to zero:
 
@@ -26,7 +26,7 @@ $$ y^2 = F(x) = 4x^7 + \lambda_4 x^5 + \lambda_6 x^4 + \lambda_8 x^3 + \lambda_{
 The demo picks seven distinct real roots summing to zero, $(-5, -3, -1.2, -0.3, 0.8, 2.7, 6)$, giving $\lambda_4 = -158.92$ and $\lambda_6 = -109.92$.
 
 ```python
-from genera import kleinian_p
+from generapy import kleinian_p
 from mpmath import mp
 mp.dps = 30
 
@@ -60,7 +60,7 @@ $$
 
 The corrected $p_I$ factor (the paper prints $p_{II}$, which cannot match the degree-$(g+1)$ generating polynomial) is the same repair as in genus two.
 
-**Index convention.** The weight rule $z_{2k-1} \leftrightarrow$ Genera coordinate $g - k$ now reads $z_1/z_3/z_5 \to$ coordinates $2/1/0$:
+**Index convention.** The weight rule $z_{2k-1} \leftrightarrow$ Generapy coordinate $g - k$ now reads $z_1/z_3/z_5 \to$ coordinates $2/1/0$:
 
 | Paper | `kleinian_p` indices |
 | --- | --- |

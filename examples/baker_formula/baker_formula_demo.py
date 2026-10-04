@@ -5,9 +5,9 @@ Run with: python -m examples.baker_formula.baker_formula_demo
 
 from mpmath import mp
 
-from genera import Curve
-from genera import kleinian_p as kp
-from genera import kleinian_sigma as ks
+from generapy import Curve
+from generapy import kleinian_p as kp
+from generapy import kleinian_sigma as ks
 
 
 def documentation_example():
@@ -24,7 +24,7 @@ def documentation_example():
         lhs = ks(u + v, curve=curve) * ks(u - v, curve=curve) / (
             ks(u, curve=curve)**2 * ks(v, curve=curve)**2)
 
-        # Baker's indices are one-based; Genera's indices are zero-based.
+        # Baker's indices are one-based; Generapy's indices are zero-based.
         p11_u, p12_u, p22_u = kp(u, curve=curve, indices=((0, 0), (0, 1), (1, 1)))
         p11_v, p12_v, p22_v = kp(v, curve=curve, indices=((0, 0), (0, 1), (1, 1)))
         rhs = p22_u * p12_v - p12_u * p22_v + p11_v - p11_u

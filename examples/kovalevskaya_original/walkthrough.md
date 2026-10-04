@@ -4,7 +4,7 @@
 Kovalevskaya top from Sophie Kowalevski's *Sur le
 problème de la rotation d'un corps solide autour d'un point fixe*, Acta
 Mathematica **12** (1889) 177--232 (English translation in `latex/`),
-using Genera's algebraic-curve engine and Riemann theta functions, and
+using Generapy's algebraic-curve engine and Riemann theta functions, and
 compares it against a high-precision RK4 integration of the equations
 of motion.  The companion folder `../kovalevskaya_top/` treats the same
 top through the modern Bobenko--Reyman--Semenov-Tian-Shansky Lax-pair
@@ -116,7 +116,7 @@ with $E = (e_2-e_3)(e_3-e_1)(e_1-e_2)$ and $L, M, N$ built from sigma
 multipliers $\sigma_\lambda(w)/\sigma(w)$ at the point $w$ with
 $\wp(w) = -l_1$ (see "Conventions").
 
-## What Genera provides
+## What Generapy provides
 
 * `Curve({(0, 2): 1, **{(i, 0): -c for i, c in enumerate(coefficients)}})` -- the genus-2 hyperelliptic curve
   from the ascending coefficients of $y^2 = R_1(s)$: genus, branch
@@ -169,11 +169,11 @@ Stages (`--stage rk4|curve|abel|theta|demo|all`):
 * **Theta series.**  The memoir's
   $\vartheta(v) = \sum_{\nu\in\mathbb{Z}^2}
   \exp\{\pi i\,\nu^T\tau\nu + 2\pi i\,\nu^T v\}$ (section 6) is
-  *exactly* Genera's `rtheta` convention.  But the memoir's $\tau$
-  belongs to its own Rosenhain (real-oval) marking, while Genera's
+  *exactly* Generapy's `rtheta` convention.  But the memoir's $\tau$
+  belongs to its own Rosenhain (real-oval) marking, while Generapy's
   $\tau$ belongs to the automatic Baker marking -- different matrices.
   So the memoir's $\vartheta_\lambda$ *labels* are not transplanted.
-  Instead, the characteristics are derived afresh in Genera's marking
+  Instead, the characteristics are derived afresh in Generapy's marking
   from its branch-point half-periods. The memoir's section-7 constants
   $c_\lambda$ are replaced by equivalent quotient multipliers fixed from
   the algebraic normalization.
@@ -183,7 +183,7 @@ Stages (`--stage rk4|curve|abel|theta|demo|all`):
   equivalent representation obtained from theta parity; it is not a
   distinct numerical normalization. The Riemann constant occurs as the
   common denominator characteristic rather than as an added argument.
-* **Characteristics.**  Genera takes literal vectors $(a, b)$; the demo
+* **Characteristics.**  Generapy takes literal vectors $(a, b)$; the demo
   prints them as `[a1a2;b1b2]` bit patterns.  All fifteen P's share one
   denominator characteristic, $[11;01]$ -- the analogue of the memoir's
   common $\vartheta_5$ -- and the fifteen numerators exhaust the
@@ -197,7 +197,7 @@ Stages (`--stage rk4|curve|abel|theta|demo|all`):
   $\sigma_\lambda(w)/\sigma(w) = -i\sqrt{l_1 + e_\lambda}$, fixed by
   continuation on the selected real oval and the initial sheet.
 * **Flow velocity.**  The memoir's $(du_1, du_2) = (dt, 0)$ appears as
-  $V = (0, -1)$ in Genera's engine coordinates -- the same statement in
+  $V = (0, -1)$ in Generapy's engine coordinates -- the same statement in
   a different basis.
 * **Reality bookkeeping.**  The memoir's section-5 reality analysis
   ($L, M, N$ and $P_1, P_2, P_3$ imaginary; $L_1, M_1, N_1$ real)
@@ -290,7 +290,7 @@ more substeps.
 
 ## Running
 
-From the Genera repository root:
+From the Generapy repository root:
 
     .venv/bin/python -m examples.kovalevskaya_original.kovalevskaya_original_demo
     .venv/bin/python -m examples.kovalevskaya_original.kovalevskaya_original_demo --stage theta

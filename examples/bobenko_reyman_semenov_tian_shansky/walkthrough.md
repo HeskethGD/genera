@@ -28,7 +28,7 @@ The RK4 implementation is shared with the other dynamics examples through
 
 ## Run
 
-From the Genera repository root:
+From the Generapy repository root:
 
 ```bash
 .venv/bin/python -m \

@@ -32,7 +32,7 @@ def ctx_lru_cache(maxsize=128):
     Notes
     -----
     The mpmath development branch contains an equivalent context-aware cache,
-    but it is not part of a released public API. Genera temporarily owns this
+    but it is not part of a released public API. Generapy temporarily owns this
     implementation. Once mpmath releases a supported cache utility, replace
     this implementation with the mpmath version.
     """

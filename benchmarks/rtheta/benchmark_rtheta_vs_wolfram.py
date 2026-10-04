@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare genera rtheta with Wolfram Engine's SiegelTheta.
+"""Compare generapy rtheta with Wolfram Engine's SiegelTheta.
 
 The script evaluates genus-one, genus-two and genus-three cases, checks the
 returned values, times warmed fixed-tau calls, and writes a Markdown report
@@ -34,7 +34,7 @@ WOLFRAM_KERNEL = (
 )
 sys.path.insert(0, str(REPO_ROOT/'src'))
 
-import genera
+import generapy
 from mpmath import mp  # noqa: E402
 
 

@@ -4,9 +4,9 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent / "docs_ext"))
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-project = "Genera"
-copyright = "2026, Genera contributors"
-author = "Genera contributors"
+project = "Generapy"
+copyright = "2026, Generapy contributors"
+author = "Generapy contributors"
 
 extensions = [
     "sphinx.ext.autodoc",
@@ -14,14 +14,14 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.napoleon",
     "matplotlib.sphinxext.plot_directive",
-    "genera_example",
+    "generapy_example",
 ]
 nitpicky = True
 exclude_patterns = ["_build"]
 html_theme = "furo"
 html_static_path = ["_static"]
-html_logo = "_static/genera-logo.png"
-html_title = "Genera documentation"
+html_logo = "_static/generapy-logo.png"
+html_title = "Generapy documentation"
 # Teal, mint, and gold sampled from the logo; keep backgrounds close to
 # Furo's defaults so mathematical text and code remain easy to read.
 html_theme_options = {
@@ -48,7 +48,7 @@ html_theme_options = {
         "color-background-border": "#235c4f",
     },
 }
-html_css_files = ["genera.css"]
+html_css_files = ["generapy.css"]
 
 plot_include_source = True
 plot_formats = [("png", 96), "pdf"]
@@ -72,7 +72,7 @@ def track_example_dependencies(app, docname, source):
     if not docname.startswith("examples/"):
         return
     root = Path(__file__).resolve().parent.parent
-    for directory in ("src/genera", "examples", "docs_ext"):
+    for directory in ("src/generapy", "examples", "docs_ext"):
         for path in (root / directory).rglob("*.py"):
             app.env.note_dependency(str(path))
 

@@ -1,26 +1,26 @@
-# Genera
+# Generapy
 
-<img src="https://raw.githubusercontent.com/HeskethGD/genera/main/docs/_static/genera-logo.png" alt="Genera logo: a curved, gridded letter g in teal and gold" width="220">
+<img src="https://raw.githubusercontent.com/HeskethGD/generapy/main/docs/_static/generapy-logo.png" alt="Generapy logo: a curved, gridded letter g in teal and gold" width="220">
 
-Genera is an early-stage numeric Python package for arbitrary-precision computation
+Generapy is an early-stage numeric Python package for arbitrary-precision computation
 with algebraic curves and Abelian functions, particularly for applications in
 integrable systems.
 
-Genera uses [mpmath](https://mpmath.org/) for arbitrary-precision arithmetic.
+Generapy uses [mpmath](https://mpmath.org/) for arbitrary-precision arithmetic.
 It is an independent project and does not modify the mpmath namespace.
-Genera retains the applicable BSD-3-Clause copyright and licence notice.
+Generapy retains the applicable BSD-3-Clause copyright and licence notice.
 
 ## Installation
 
 Install from PyPI:
 
 ```sh
-pip install genera
+pip install generapy
 ```
 
 Requires Python 3.11 or later.
 
-**Documentation:** https://genera.readthedocs.io/en/latest/
+**Documentation:** https://generapy.readthedocs.io/en/latest/
 
 ## Quick Example
 
@@ -33,9 +33,9 @@ H. F. Baker, *An Introduction to the Theory of Multiply Periodic Functions*
 ```python
 from mpmath import mp
 
-from genera import Curve
-from genera import kleinian_sigma as ks
-from genera import kleinian_p as kp
+from generapy import Curve
+from generapy import kleinian_sigma as ks
+from generapy import kleinian_p as kp
 
 mp.dps = 30
 
@@ -49,7 +49,7 @@ v = mp.matrix([mp.mpf("0.1"), mp.mpf("0.4")])
 lhs = ks(u + v, curve=curve) * ks(u - v, curve=curve) / (
     ks(u, curve=curve)**2 * ks(v, curve=curve)**2)
 
-# Baker's indices are one-based; Genera's indices are zero-based.
+# Baker's indices are one-based; Generapy's indices are zero-based.
 p11_u, p12_u, p22_u = kp(u, curve=curve, indices=((0, 0), (0, 1), (1, 1)))
 p11_v, p12_v, p22_v = kp(v, curve=curve, indices=((0, 0), (0, 1), (1, 1)))
 rhs = p22_u * p12_v - p12_u * p22_v + p11_v - p11_u
@@ -58,9 +58,9 @@ print(mp.nstr(abs(rhs - lhs), 6))  # 6.31089e-29
 ```
 
 The curve supplies the period data and canonical hyperelliptic sigma
-normalization automatically. See the [example walkthrough](https://genera.readthedocs.io/en/latest/examples/baker_formula.html)
+normalization automatically. See the [example walkthrough](https://generapy.readthedocs.io/en/latest/examples/baker_formula.html)
 for the identity and conventions, or run the
-[complete example](https://github.com/HeskethGD/genera/blob/v0.1.0/examples/baker_formula/baker_formula_demo.py).
+[complete example](https://github.com/HeskethGD/generapy/blob/v0.1.0/examples/baker_formula/baker_formula_demo.py).
 
 ## Development
 
@@ -76,7 +76,7 @@ Run the local checks with:
 ```sh
 .venv/bin/ruff check .
 .venv/bin/pytest
-.venv/bin/pytest --cov=genera --cov-report=term-missing
+.venv/bin/pytest --cov=generapy --cov-report=term-missing
 .venv/bin/sphinx-build -W -b html docs build/sphinx/html
 .venv/bin/python -m build
 ```
@@ -93,17 +93,23 @@ validates the distributions, checks an installed wheel, and publishes to PyPI.
 
 For the one-time setup, create a GitHub environment named `pypi` and register
 a [PyPI Trusted Publisher](https://docs.pypi.org/trusted-publishers/adding-a-publisher/)
-for owner `HeskethGD`, repository `genera`, workflow `release.yml`, and
+for owner `HeskethGD`, repository `generapy`, workflow `release.yml`, and
 environment `pypi`. For the first release, register a
 [pending publisher](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/)
-for project `genera` in your PyPI account's Publishing settings. No API token
+for project `generapy` in your PyPI account's Publishing settings. No API token
 is needed. Publish each version once; use a new tag and version for changes
 after publication.
+
+Before the first release, rename the GitHub repository to `generapy` and
+configure a Read the Docs project with the slug `generapy` to match the links
+and publisher configuration above.
+Commit the package rename and move the unpublished `v0.1.0` tag to that commit
+before running the release workflow.
 
 ## Examples
 
 Literature-based numerical examples live in the repository's `examples/`
-directory. They are not installed as part of the `genera` package and do
+directory. They are not installed as part of the `generapy` package and do
 not require plotting libraries. Run them from a source checkout, for example:
 
 ```sh

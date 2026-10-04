@@ -67,7 +67,7 @@ def catalog():
         case('general-fermat-quartic-g3',{(4,0):1,(0,4):1,(0,0):-1},3,'established'),
         case('general-super-g4',{(0,3):1,(5,0):-1,(0,0):1},4,'heavy',
              'Actual equation y^3=x^5-1; fixes inconsistent prose in older catalog'),
-        case('general-kovalevskaya-g3',kova,3,'established','Known basis required by genera',
+        case('general-kovalevskaya-g3',kova,3,'established','Known basis required by generapy',
              [packed({(1,0):1}),packed({(1,1):1}),packed({(1,2):1,(0,0):-1})]),
         case('nonmonic-elliptic',{(1,2):1,(2,0):-1,(0,0):-1},1,'expanded',
              'w=x*y gives w^2=x^3+x'),
@@ -85,7 +85,7 @@ def catalog():
     c = polynomial([1,2,3,4,4])
     rows.append(case('singular-g1-double-point',
                      {(0,2):1,**{(i,0):-v for i,v in enumerate(c)}},1,'negative',
-                     'genera should reject; Sage may normalize. Never a speed comparison.',
+                     'generapy should reject; Sage may normalize. Never a speed comparison.',
                      expected_rejection=True))
     return {r['name']: r for r in rows}
 

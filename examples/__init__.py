@@ -1,1 +1,1 @@
-"""Repository examples; this package is not included in Genera wheels."""
+"""Repository examples; this package is not included in Generapy wheels."""

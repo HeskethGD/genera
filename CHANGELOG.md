@@ -35,4 +35,4 @@ This is an experimental research release providing arbitrary-precision computati
 - Abelian function evaluation at arbitrary argument vectors
 - Integration with mpmath for arbitrary-precision numerics
 
-[0.1.0]: https://github.com/HeskethGD/genera/releases/tag/v0.1.0
+[0.1.0]: https://github.com/HeskethGD/generapy/releases/tag/v0.1.0

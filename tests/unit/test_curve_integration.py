@@ -1,19 +1,19 @@
 from tests._support import make_curve, with_basis
 import pytest
 
-import genera.curves.jacobian as curve_jacobian
-import genera.curves.integration as curve_integration
+import generapy.curves.jacobian as curve_jacobian
+import generapy.curves.integration as curve_integration
 from mpmath import mp
-from genera.curves.continuation import _continue_plane_curve_sheets_adaptive
-from genera.curves.integration import (
+from generapy.curves.continuation import _continue_plane_curve_sheets_adaptive
+from generapy.curves.integration import (
     _concatenate_iterated_path_integrals, _gauss_indefinite_matrix,
     _integrate_plane_curve_path,
     _integrate_plane_curve_path_iterated,
     _newton_plane_curve_segment_samples,
     _pullback_plane_curve_differentials, _reverse_iterated_path_integrals,
 )
-from genera.curves._records import _IteratedPathIntegrals
-from genera.curves.polynomial import (
+from generapy.curves._records import _IteratedPathIntegrals
+from generapy.curves.polynomial import (
     _newton_polynomial_root, _prepare_plane_curve,
 )
 
@@ -129,8 +129,8 @@ def test_second_kind_abel_map_checks_geometry_quadrature(monkeypatch):
 
 
 def test_checked_chart_tail_checks_each_component_and_bounds_work(monkeypatch):
-    from genera.curves.continuation import _continue_plane_curve_branch
-    from genera.curves.integration import _integrate_plane_curve_branch
+    from generapy.curves.continuation import _continue_plane_curve_branch
+    from generapy.curves.integration import _integrate_plane_curve_branch
     ctx = mp.clone()
     ctx.dps = 20
     curve = _prepare_plane_curve(ctx, {(0, 1): 1, (0, 0): -1})
@@ -195,8 +195,8 @@ def test_path_quadrature_validates_vectorized_evaluation():
 
 
 def test_zero_length_paths_have_zero_ordinary_and_iterated_integrals():
-    from genera.curves.continuation import _continue_plane_curve_branch
-    from genera.curves.integration import _integrate_plane_curve_branch
+    from generapy.curves.continuation import _continue_plane_curve_branch
+    from generapy.curves.integration import _integrate_plane_curve_branch
     ctx = mp.clone()
     ctx.dps = 20
     curve = _prepare_plane_curve(ctx, {(0, 1): 1, (1, 0): -1})
@@ -216,8 +216,8 @@ def test_zero_length_paths_have_zero_ordinary_and_iterated_integrals():
     ({"check_convergence": "yes"}, "must be boolean"),
 ])
 def test_chart_quadrature_rejects_invalid_controls(options, message):
-    from genera.curves.continuation import _continue_plane_curve_branch
-    from genera.curves.integration import _integrate_plane_curve_branch
+    from generapy.curves.continuation import _continue_plane_curve_branch
+    from generapy.curves.integration import _integrate_plane_curve_branch
     curve = _prepare_plane_curve(mp, {(0, 1): 1, (1, 0): -1})
     branch = _continue_plane_curve_branch(mp, curve, (0, 1), 0)
     with pytest.raises(ValueError, match=message):
@@ -226,8 +226,8 @@ def test_chart_quadrature_rejects_invalid_controls(options, message):
 
 @pytest.mark.parametrize("forms", [None, (), (1,)])
 def test_chart_quadrature_requires_callable_forms(forms):
-    from genera.curves.continuation import _continue_plane_curve_branch
-    from genera.curves.integration import _integrate_plane_curve_branch
+    from generapy.curves.continuation import _continue_plane_curve_branch
+    from generapy.curves.integration import _integrate_plane_curve_branch
     curve = _prepare_plane_curve(mp, {(0, 1): 1, (1, 0): -1})
     branch = _continue_plane_curve_branch(mp, curve, (0, 1), 0)
     with pytest.raises(ValueError, match="sequence of callables"):
@@ -279,8 +279,8 @@ def test_chart_pullback_applies_dx_dt_and_validates_inputs():
 
 
 def test_chart_quadrature_rejects_inconsistent_branch_data():
-    from genera.curves.continuation import _continue_plane_curve_branch
-    from genera.curves.integration import _integrate_plane_curve_branch
+    from generapy.curves.continuation import _continue_plane_curve_branch
+    from generapy.curves.integration import _integrate_plane_curve_branch
     curve = _prepare_plane_curve(mp, {(0, 1): 1, (1, 0): -1})
     branch = _continue_plane_curve_branch(mp, curve, (0, 1), 0)
     inconsistent = branch._replace(values=branch.values[:-1])
@@ -330,7 +330,7 @@ def test_riemann_constant_rejects_incompatible_cycle_count():
 
 
 def test_chart_quadrature_reports_a_stalled_node_correction(monkeypatch):
-    from genera.curves.continuation import _continue_plane_curve_branch
+    from generapy.curves.continuation import _continue_plane_curve_branch
     ctx = mp.clone()
     curve = _prepare_plane_curve(ctx, {(0, 2): 1, (1, 0): -1})
     branch = _continue_plane_curve_branch(ctx, curve, (1, 2), 1)

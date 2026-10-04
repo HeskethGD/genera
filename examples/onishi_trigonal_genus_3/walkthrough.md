@@ -4,7 +4,7 @@
 of Lemma 5.1 of J. C. Eilbeck, V. Z. Enolskii, S. Matsutani, Y. Onishi,
 E. Previato, *Abelian functions for trigonal curves of genus three*
 (arXiv:math/0610019v2; the LaTeX source lives in `latex/`), against
-Genera's general plane-curve and Kleinian machinery.  The curves and the
+Generapy's general plane-curve and Kleinian machinery.  The curves and the
 evaluation points are chosen for this example alone; nothing is taken
 from Bernatska's or any other example, and no period, characteristic or
 function value is taken from the paper.
@@ -47,7 +47,7 @@ For each curve the demo runs:
    residuals of the fourteen relations are reported over three generic
    points.
 
-Convention mapping: Genera's `curve_periods` returns omega as half the
+Convention mapping: Generapy's `curve_periods` returns omega as half the
 a-period matrix and eta as minus one half of the a-periods of supplied
 second-kind forms, so kappa = eta*omega^-1 = -eta'*(omega')^-1 is exactly
 the quadratic form `kleinian_sigma` wants.  Zero-based kleinian indices
@@ -70,7 +70,7 @@ the quadratic form `kleinian_sigma` wants.  Zero-based kleinian indices
 
 All fourteen relations hold on both curves.  On the purely trigonal
 curve nothing is fitted, so this is a complete, independent verification
-of both Genera's engine and the relations.  On the general curve the six
+of both Generapy's engine and the relations.  On the general curve the six
 entries of the symmetric quadratic form are closed against the fourteen
 relations at the first evaluation point (fourteen complex equations in
 six complex unknowns; the closure residual 2.9e-15 is itself a
@@ -115,7 +115,7 @@ normalization:
    there, the expansion as displayed corresponds to sigma multiplied
    by a non-trivial exp(transp(u) A u / 2).
 
-4. **Precision note (Genera side).**  `curve_riemann_constant` on the
+4. **Precision note (Generapy side).**  `curve_riemann_constant` on the
    general curve (whose monodromy paths have minimum branch clearance
    3e-4) returned an O(1)-wrong value at dps 20 -- silently, since the
    wrong value still reduced to half-integral characteristic entries.
@@ -130,11 +130,11 @@ entries against the relations themselves and verifies everything else.
 
 ## Running
 
-From the Genera repository root:
+From the Generapy repository root:
 
     .venv/bin/python -m examples.onishi_trigonal_genus_3.lemma_5_1_demo
     .venv/bin/python -m examples.onishi_trigonal_genus_3.lemma_5_1_demo \
         --dps 35 --curves purely-trigonal
 
 The script exits non-zero and lists the failing stages if any check
-fails.  Genera and its mpmath dependency are sufficient.
+fails.  Generapy and its mpmath dependency are sufficient.

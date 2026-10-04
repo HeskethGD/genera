@@ -4,7 +4,7 @@
 import argparse
 from dataclasses import dataclass
 
-from genera import rtheta, rtheta_jet
+from generapy import rtheta, rtheta_jet
 from mpmath import mp
 
 from examples._rk4 import rk4_trajectory
@@ -58,7 +58,7 @@ prym_tau = mp.matrix([
 ])
 prym_tau = (prym_tau + prym_tau.T) / 2
 # The difference coordinate has index-two lattice spacing in the split sum.
-# Thus the elliptic theta in (7.64) maps to Genera with twice the normalized
+# Thus the elliptic theta in (7.64) maps to Generapy with twice the normalized
 # b1 period of du1-du3 (the paper calls half of B0 the elliptic period).
 b0 = mp.matrix([[2 * (tau[0, 0] - tau[2, 0])]])
 

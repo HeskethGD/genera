@@ -3,16 +3,16 @@
 This example reproduces the trigonal calculations in Example 3 and Example
 3a of J. Bernatska, *Computation of P-Functions on Plane Algebraic Curves*
 (arXiv:2407.05632v4).  It is the example that was previously out of reach of
-Genera's hyperelliptic-only curve-data machinery.
+Generapy's hyperelliptic-only curve-data machinery.
 
-The runnable, no-plot script is `bernatska_trigonal_demo.py`.  From the Genera
+The runnable, no-plot script is `bernatska_trigonal_demo.py`.  From the Generapy
 repository root, run
 
 ```text
 .venv/bin/python -m examples.bernatska.bernatska_trigonal_demo
 ```
 
-Genera and its mpmath dependency are sufficient at runtime.
+Generapy and its mpmath dependency are sufficient at runtime.
 
 ## 1. The curve
 
@@ -178,10 +178,10 @@ and the Riemann-constant characteristic
  [K]=\begin{pmatrix}1&0&1\\0&1&1\end{pmatrix}.
 \]
 
-The entries of the latter become half-integers in Genera's literal theta
+The entries of the latter become half-integers in Generapy's literal theta
 characteristic convention.  Bernatska uses full periods, whereas
 `kleinian_p` takes the classical half-period matrix, so the script passes
-`omega/2`.  Her displayed `varkappa` has the opposite sign from Genera's
+`omega/2`.  Her displayed `varkappa` has the opposite sign from Generapy's
 sigma convention, just as in the existing genus-four Bernatska test.
 
 With those explicit conversions, `kleinian_p` evaluates the eight second-

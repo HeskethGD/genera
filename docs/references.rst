@@ -1,7 +1,7 @@
 References
 ==========
 
-The following works are cited by Genera's documentation and numerical
+The following works are cited by Generapy's documentation and numerical
 implementations.
 
 .. [Baker1907] H. F. Baker. *An Introduction to the Theory of Multiply

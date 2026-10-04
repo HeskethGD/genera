@@ -2,10 +2,10 @@ from tests._support import make_curve
 import pytest
 
 from mpmath import mp
-from genera.curves.differentials import (
+from generapy.curves.differentials import (
     _baker_basis, _baker_callable, _evaluate_baker_basis, _newton_polygon,
 )
-from genera.curves.polynomial import _prepare_plane_curve
+from generapy.curves.polynomial import _prepare_plane_curve
 
 
 def test_baker_basis_order_evaluation_and_applicability_checks():

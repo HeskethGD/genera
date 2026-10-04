@@ -1008,7 +1008,7 @@ def rtheta(z, tau, characteristic=None, derivative=0, *, ctx=None):
     Evaluate a genus-two theta value::
 
         >>> from mpmath import mp
-        >>> from genera import rtheta
+        >>> from generapy import rtheta
         >>> mp.dps = 15
         >>> mp.pretty = True
         >>> tau = [[1.0j, 0.05j], [0.05j, 1.2j]]
@@ -1103,17 +1103,17 @@ def rtheta_jet(z, tau, order, characteristic=None, *, ctx=None):
         (0, 0), (1, 0), (0, 1), (2, 0), (1, 1), (0, 2)
 
     Values are ordinary derivatives, using the same convention as the
-    ``derivative`` argument to :func:`~genera.rtheta`; they are not divided
+    ``derivative`` argument to :func:`~generapy.rtheta`; they are not divided
     by multi-index factorials. All components are accumulated in one lattice
     traversal, which is normally much faster than separate calls to
-    :func:`~genera.rtheta`.
+    :func:`~generapy.rtheta`.
 
     **Examples**
 
     Evaluate a value, gradient and Hessian components together::
 
         >>> from mpmath import almosteq
-        >>> from genera import rtheta, rtheta_jet
+        >>> from generapy import rtheta, rtheta_jet
         >>> tau = [[1.0j, 0.05j], [0.05j, 1.2j]]
         >>> z = [0.1, 0.2]
         >>> jet = rtheta_jet(z, tau, 2)
@@ -1123,7 +1123,7 @@ def rtheta_jet(z, tau, order, characteristic=None, *, ctx=None):
         True
 
     Characteristics use the same literal ``(a, b)`` convention as
-    :func:`~genera.rtheta`.
+    :func:`~generapy.rtheta`.
 
     """
     ctx = resolve_context(ctx)

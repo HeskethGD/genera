@@ -1,4 +1,4 @@
-"""Sphinx directive for running a Genera example during documentation builds."""
+"""Sphinx directive for running a Generapy example during documentation builds."""
 
 from pathlib import Path
 import os
@@ -9,7 +9,7 @@ from docutils import nodes
 from docutils.parsers.rst import Directive, directives
 
 
-class GeneraExampleDirective(Directive):
+class GenerapyExampleDirective(Directive):
     """Run an example module and render its captured output."""
 
     required_arguments = 1
@@ -41,14 +41,14 @@ class GeneraExampleDirective(Directive):
             )
         except subprocess.TimeoutExpired as exc:
             raise self.error(
-                f"Genera example {module!r} exceeded the {timeout}-second "
+                f"Generapy example {module!r} exceeded the {timeout}-second "
                 "documentation timeout"
             ) from exc
 
         output = completed.stdout or "(example produced no output)\n"
         if completed.returncode:
             raise self.error(
-                f"Genera example {module!r} failed with exit code "
+                f"Generapy example {module!r} failed with exit code "
                 f"{completed.returncode}:\n{output}"
             )
 
@@ -63,7 +63,7 @@ class GeneraExampleDirective(Directive):
 
 
 def setup(app):
-    app.add_directive("genera-example", GeneraExampleDirective)
+    app.add_directive("generapy-example", GenerapyExampleDirective)
     return {
         "version": "1",
         "parallel_read_safe": False,

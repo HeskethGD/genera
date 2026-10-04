@@ -1,10 +1,10 @@
 """Shared helpers for adapting explicit numerical contexts in tests."""
 
-from genera import Curve
+from generapy import Curve
 
 
 def make_curve(ctx, polynomial, **kwargs):
-    """Construct a curve through Genera's public context-aware constructor."""
+    """Construct a curve through Generapy's public context-aware constructor."""
     return Curve(polynomial, ctx=ctx, **kwargs)
 
 

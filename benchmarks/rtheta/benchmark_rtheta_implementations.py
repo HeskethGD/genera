@@ -236,9 +236,9 @@ def mp_number(mp, value):
 def run_mpmath(dps_values, repeat, selected):
     """Evaluate and time the local mpmath implementation."""
     sys.path.insert(0, str(REPO_ROOT/'src'))
-    import genera
+    import generapy
     from mpmath import mp
-    from genera.riemann_theta import _rtheta_derivatives
+    from generapy.riemann_theta import _rtheta_derivatives
 
     rows = []
     for dps in dps_values:
@@ -424,7 +424,7 @@ def parse_decimal(mp, value):
 
 def achieved_digits(row, oracle):
     """Return the worst-case decimal accuracy for a result row."""
-    import genera
+    import generapy
     from mpmath import mp
 
     with mp.workdps(70):

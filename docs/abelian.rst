@@ -26,7 +26,7 @@ The :ref:`Bobenko theta calculation <bobenko-theta-example>` uses ``rtheta``
 for characteristic-dependent theta quotients and ``rtheta_jet`` for their
 derivatives along the flow.
 
-.. autofunction:: genera.rtheta
+.. autofunction:: generapy.rtheta
 
 The following plots show two real slices and the modulus over two real
 variables for genus-two period matrices. Similar slices and surfaces are
@@ -36,7 +36,7 @@ illustrated in `DLMF section 21.4 <https://dlmf.nist.gov/21.4>`_.
 
    import matplotlib.pyplot as plt
    from mpmath import j, plot, re
-   from genera import rtheta
+   from generapy import rtheta
 
    tau = [[j, -0.5], [-0.5, j]]
    curves = [
@@ -55,7 +55,7 @@ illustrated in `DLMF section 21.4 <https://dlmf.nist.gov/21.4>`_.
 
    import matplotlib.pyplot as plt
    from mpmath import j, splot
-   from genera import rtheta
+   from generapy import rtheta
 
    tau = [[j, 0.5], [0.5, j]]
    fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
@@ -64,7 +64,7 @@ illustrated in `DLMF section 21.4 <https://dlmf.nist.gov/21.4>`_.
          axes=ax, plot3d_kwargs={"color": "#015758"})
    ax.set_zlabel(r"$|\theta(z\mid\tau)|$")
 
-.. autofunction:: genera.rtheta_jet
+.. autofunction:: generapy.rtheta_jet
 
 Curve data for Kleinian functions
 .................................
@@ -84,7 +84,7 @@ context and precision for repeated evaluations. The specialist route accepts
 ``omega``, ``tau``, ``kappa``, and ``characteristic`` explicitly; all must refer
 to the same basis and homology marking. Curve and explicit period inputs cannot
 be mixed.
-The optional ``ctx`` argument uses the same convention throughout Genera;
+The optional ``ctx`` argument uses the same convention throughout Generapy;
 see the :ref:`Curve constructor examples <numerical-contexts>` for an
 independent-precision example.
 
@@ -116,7 +116,7 @@ Riemann matrix ``tau``, and the symmetric matrix ``kappa``. The convention is
    v&=(2\omega)^{-1}u.
    \end{aligned}
 
-The characteristic uses the same literal convention as :func:`genera.rtheta`.
+The characteristic uses the same literal convention as :func:`generapy.rtheta`.
 The explicit-period route retains the zero-characteristic default; curve-based
 calls derive the curve's Riemann characteristic.
 Curve-based sigma calls automatically select hyperelliptic normalization for
@@ -147,15 +147,15 @@ derivatives where sigma itself vanishes. The
 :ref:`Manakov solution <manakov-kleinian-example>` uses batched
 ``kleinian_p`` evaluations to reconstruct amplitudes and momenta.
 
-.. autofunction:: genera.kleinian_sigma_normalization
+.. autofunction:: generapy.kleinian_sigma_normalization
 
-.. autofunction:: genera.kleinian_sigma
+.. autofunction:: generapy.kleinian_sigma
 
-.. autofunction:: genera.kleinian_sigma_jet
+.. autofunction:: generapy.kleinian_sigma_jet
 
-.. autofunction:: genera.kleinian_zeta
+.. autofunction:: generapy.kleinian_zeta
 
-.. autofunction:: genera.kleinian_p
+.. autofunction:: generapy.kleinian_p
 
 For the classical development of Abelian, theta, sigma, and multiply periodic
 functions, see [BEL1997]_, [CEEK2000]_, and [Onishi2005]_.

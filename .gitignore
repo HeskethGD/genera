@@ -11,7 +11,7 @@ coverage.xml
 build/
 dist/
 htmlcov/
-src/genera/_version.py
+src/generapy/_version.py
 
 # Benchmark results (timestamped development runs)
 benchmarks/**/results/*/

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare genera hyperelliptic periods with PARI/GP.
+"""Compare generapy hyperelliptic periods with PARI/GP.
 
 Run from the repository root with the normal mpmath development environment::
 
@@ -33,10 +33,10 @@ DEFAULT_REPORT = SCRIPT_DIR / "hyperelliptic_vs_pari.md"
 DEFAULT_PARI = Path.home() / ".local/pari-2.18.1-alpha/bin/gp"
 sys.path.insert(0, str(REPO_ROOT/'src'))
 
-import genera
+import generapy
 from mpmath import mp
-genera_version = genera.__version__
-from genera.curves._stages import (  # noqa: E402
+generapy_version = generapy.__version__
+from generapy.curves._stages import (  # noqa: E402
     _stage_hyperelliptic_periods,
 )
 
@@ -207,7 +207,7 @@ def benchmark(args):
                     mp.mpf(value.numerator) / value.denominator
                     for value in coefficients_exact]
                 def mpmath_period_data():
-                    from genera import Curve
+                    from generapy import Curve
                     _stage_hyperelliptic_periods.cache_clear()
                     return Curve(
                         {(0, 2): 1, **{(i, 0): -c for i, c in enumerate(coefficients)}}).periods_kind_1()
@@ -265,7 +265,7 @@ def markdown(rows, args, gp, pari_version):
         f"- Date: {datetime.datetime.now(datetime.timezone.utc).isoformat()}",
         f"- Platform: {platform.platform()}",
         f"- Python: {platform.python_version()}",
-        f"- mpmath: {genera_version}",
+        f"- mpmath: {generapy_version}",
         f"- PARI/GP: {pari_version} (`{gp}`)",
         f"- mpmath timing: median of {args.trials} trials, "
         f"{args.repetitions} call(s) per trial",

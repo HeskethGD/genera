@@ -1,9 +1,9 @@
 from tests._support import make_curve
 import pytest
 
-import genera
-import genera.curves.integration as curve_integration
-from genera import (
+import generapy
+import generapy.curves.integration as curve_integration
+from generapy import (
     Curve, CurveBranchLocus, CurveChart, CurveCheck,
     CurvePeriodsKind1, CurveGenus, CurveHomology, CurveIntegral,
     CurveLatticeReduction, CurveMonodromy, CurvePath, CurvePlace,
@@ -11,29 +11,29 @@ from genera import (
     CurveValidation,
 )
 from mpmath import mp
-from genera.curves._hyperelliptic import (
+from generapy.curves._hyperelliptic import (
     _hyperelliptic_abel_map as _specialized_hyperelliptic_abel_map,
     _hyperelliptic_periods as _specialized_hyperelliptic_periods,
 )
-from genera.curves.charts import (
+from generapy.curves.charts import (
     chart_fibre as _chart_fibre,
     chart_integral as _chart_integral,
     monomial_chart as _chart_monomial,
 )
-from genera.curves.continuation import (
+from generapy.curves.continuation import (
     _continue_plane_curve_branch,
     _continue_plane_curve_sheets_adaptive,
     _lift_plane_curve_path,
     _radial_branch_geometry,
 )
-from genera.curves.integration import (
+from generapy.curves.integration import (
     _integrate_plane_curve_path,
     _integrate_plane_curve_branch,
     _pullback_plane_curve_differentials,
 )
-from genera.curves.homology import _brahana_canonical_words
-from genera.curves.monodromy import _radial_plane_curve_monodromy
-from genera.curves.polynomial import (
+from generapy.curves.homology import _brahana_canonical_words
+from generapy.curves.monodromy import _radial_plane_curve_monodromy
+from generapy.curves.polynomial import (
     _evaluate_plane_derivative,
     _evaluate_plane_polynomial,
     _finite_plane_curve_sheets,
@@ -43,7 +43,7 @@ from genera.curves.polynomial import (
     _plane_polynomial_y_coefficients,
     _prepare_plane_curve,
 )
-from genera.curves import _operations
+from generapy.curves import _operations
 
 
 def _curve(polynomial, **kwargs):
@@ -532,7 +532,7 @@ def test_curve_periods_second_kind_general_plane_curve():
 
 def test_curve_stage_caching_and_input_forms():
     mp.dps = 20
-    from genera.curves import _stages as stages
+    from generapy.curves import _stages as stages
     for stage in (stages._stage_branch_locus, stages._stage_monodromy,
                   stages._stage_geometric_cover,
                   stages._stage_geometric_polygon,
@@ -755,7 +755,7 @@ def test_curve_lattice_reduce_exact_lattice():
 
 
 def test_curve_result_records_are_public():
-    assert all(record.__module__ == "genera.curves._records"
+    assert all(record.__module__ == "generapy.curves._records"
                for record in (
                    CurveBranchLocus, CurveChart, CurveGenus, CurveHomology,
                    CurveCheck, CurveIntegral, CurveLatticeReduction,
@@ -823,8 +823,8 @@ def test_curve_chart_public_surface_and_ownership():
         with pytest.raises(ValueError, match="working precision"):
             curve_chart_fibre(chart, 0)
 
-    assert not hasattr(genera, "curve_chart_reciprocal_y")
-    assert not hasattr(genera, "curve_chart_blow_up")
+    assert not hasattr(generapy, "curve_chart_reciprocal_y")
+    assert not hasattr(generapy, "curve_chart_blow_up")
 
 
 def test_curve_chart_place_cutoff_stability_and_composition():

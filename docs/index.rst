@@ -1,7 +1,7 @@
-Genera documentation
-====================
+Generapy documentation
+======================
 
-Genera provides arbitrary-precision numerical algorithms for algebraic curves,
+Generapy provides arbitrary-precision numerical algorithms for algebraic curves,
 Riemann theta functions, Abelian functions, and integrable systems. It uses
 mpmath for numerical types, arithmetic, matrices, and precision contexts.
 

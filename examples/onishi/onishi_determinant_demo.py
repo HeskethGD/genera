@@ -7,12 +7,12 @@ equates a multipoint quotient of sigma-stratum derivatives to a determinant
 of affine curve monomials.  Theorem 8.3 takes its confluent limit, equating a
 sigma division function to a determinant of repeated curve derivatives.
 
-The curve is written in the Genera convention
+The curve is written in the Generapy convention
 
     Y**2 = 4 * product(x - e_i),
 
-so Genera's holomorphic differentials x**j dx/Y are exactly Onishi's
-x**j dx/(2*y), with y = Y/2.  All sigma values use Genera's canonical
+so Generapy's holomorphic differentials x**j dx/Y are exactly Onishi's
+x**j dx/(2*y), with y = Y/2.  All sigma values use Generapy's canonical
 ``normalization="hyperelliptic"`` convention.  The constant multiplying
 the sigma quotient is fixed from the leading Schur--Weierstrass polynomial
 in that convention.  This is an exact local calculation, not a fitted
@@ -37,14 +37,14 @@ contain derivative orders 1 through n-1.  Along the curve, the script applies
 exactly to expressions A(x) + B(x)*Y using Y**2=P(x).  Its sign is again
 fixed independently from the local Schur--Weierstrass model.
 
-Run from the Genera repository root, for example
+Run from the Generapy repository root, for example
 
     .venv/bin/python -m examples.onishi.onishi_determinant_demo
     .venv/bin/python -m examples.onishi.onishi_determinant_demo \
         --genus 4 --n 2 4 6 --kiepert-n 4 6 --coordinate 1 4 --dps 25
 
 Theta-series cost grows exponentially with genus; the formulas and column
-construction are genus-independent, but low genera are the practical
+construction are genus-independent, but low generapy are the practical
 numerical examples.
 """
 
@@ -54,7 +54,7 @@ from fractions import Fraction
 from itertools import permutations
 from math import factorial
 
-from genera import Curve, kleinian_sigma, kleinian_sigma_jet
+from generapy import Curve, kleinian_sigma, kleinian_sigma_jet
 from mpmath import mp
 
 
@@ -188,7 +188,7 @@ def evaluate_monomial_pair(pair, x, y):
 
 
 # The following small exact-polynomial helpers construct the leading
-# Schur--Weierstrass term of Genera's hyperelliptic sigma.  A polynomial is
+# Schur--Weierstrass term of Generapy's hyperelliptic sigma.  A polynomial is
 # a mapping from exponent tuples to rational coefficients.
 
 
@@ -263,7 +263,7 @@ def permutation_sign(permutation):
 
 
 def schur_weierstrass_polynomial(genus):
-    """Return the leading sigma polynomial in Genera normalization.
+    """Return the leading sigma polynomial in Generapy normalization.
 
     Onishi Section 1 writes the Schur--Weierstrass polynomial as
     det(U_(g-2*i+j+1)).  The generating series in Abelian coordinates is
@@ -352,8 +352,8 @@ def local_monomials(genus, parameter, count):
     return onishi_monomials(x, y, genus, count)
 
 
-def genera_prefactor(genus, n, schur):
-    """Derive the formula sign from Genera's leading sigma polynomial."""
+def generapy_prefactor(genus, n, schur):
+    """Derive the formula sign from Generapy's leading sigma polynomial."""
     parameters = [Fraction(index + 1) for index in range(n)]
     arguments = [local_abel_point(genus, parameter)
                  for parameter in parameters]
@@ -412,7 +412,7 @@ def local_curve_derivative(term, genus, coordinate):
     return coefficient * exponent, exponent - weight
 
 
-def genera_kiepert_prefactor(genus, n, coordinate, schur):
+def generapy_kiepert_prefactor(genus, n, coordinate, schur):
     """Derive the Kiepert sign from the exact local sigma model."""
     argument = local_abel_point(genus, Fraction(1))
     scaled_argument = tuple(n * value for value in argument)
@@ -488,7 +488,7 @@ def sigma_derivative(argument, derivative, data):
 
 
 def evaluate_formula(points, images, data, genus, prefactor):
-    """Return the two sides of Theorem 7.2 in Genera conventions."""
+    """Return the two sides of Theorem 7.2 in Generapy conventions."""
     n = len(points)
     total = [mp.fsum(image[index] for image in images)
              for index in range(genus)]
@@ -604,8 +604,8 @@ def documentation_example():
         data = (first.omega, first.tau, second.kappa,
                 curve.riemann_constant().characteristic)
         schur = schur_weierstrass_polynomial(genus)
-        prefactor = genera_prefactor(genus, 4, schur)
-        kiepert_prefactors = tuple(genera_kiepert_prefactor(genus, 4, j, schur)
+        prefactor = generapy_prefactor(genus, 4, schur)
+        kiepert_prefactors = tuple(generapy_kiepert_prefactor(genus, 4, j, schur)
                                    for j in (1, 2))
 
         def point_at(x):
@@ -744,7 +744,7 @@ def main():
     print()
 
     for n in sizes:
-        prefactor = genera_prefactor(genus, n, schur)
+        prefactor = generapy_prefactor(genus, n, schur)
         printed = printed_onishi_prefactor(genus, n)
         left, right = evaluate_formula(
             points[:n], images[:n], data, genus, prefactor)
@@ -757,7 +757,7 @@ def main():
         )
         print(f"n = {n} ({numerator_name} numerator)")
         print(f"  printed c_n:            {printed:+d}")
-        print(f"  Genera prefactor:       {prefactor:+d}")
+        print(f"  Generapy prefactor:       {prefactor:+d}")
         print(f"  convention conversion: {prefactor * printed:+d}")
         print(f"  sigma side:             {mp.nstr(left, 16)}")
         print(f"  determinant side:       {mp.nstr(right, 16)}")
@@ -769,7 +769,7 @@ def main():
     print()
     for n in kiepert_sizes:
         for coordinate in coordinates:
-            prefactor = genera_kiepert_prefactor(
+            prefactor = generapy_kiepert_prefactor(
                 genus, n, coordinate, schur)
             printed = printed_kiepert_prefactor(genus, n)
             left, right = evaluate_kiepert_formula(
@@ -781,7 +781,7 @@ def main():
                               if comparison_scale else absolute_error)
             print(f"n = {n}, derivative coordinate j = {coordinate}")
             print(f"  printed c'_n:           {printed:+d}")
-            print(f"  Genera prefactor:       {prefactor:+d}")
+            print(f"  Generapy prefactor:       {prefactor:+d}")
             print(f"  convention conversion: {prefactor * printed:+d}")
             print(f"  sigma side:             {mp.nstr(left, 16)}")
             print(f"  determinant side:       {mp.nstr(right, 16)}")

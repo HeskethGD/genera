@@ -3,7 +3,7 @@
 from tests._support import make_curve, with_basis
 import pytest
 from mpmath import mp
-from genera.curves import _operations
+from generapy.curves import _operations
 
 TERMS = {(0, 3): 1, (4, 0): -1, (1, 0): 1, (0, 0): -1}
 

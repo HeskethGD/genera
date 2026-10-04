@@ -4,9 +4,9 @@ from tests._support import make_curve
 
 import pytest
 
-import genera.curves.polynomial as curve_polynomial
+import generapy.curves.polynomial as curve_polynomial
 from mpmath import mp
-from genera.curves.polynomial import (
+from generapy.curves.polynomial import (
     _evaluate_plane_derivative, _finite_plane_curve_sheets,
     _minimum_cost_assignment, _monomial_plane_curve_chart,
     _newton_polynomial_root, _plane_curve_sheets,

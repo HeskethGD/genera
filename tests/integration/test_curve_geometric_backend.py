@@ -1,16 +1,16 @@
 """Targeted tests of the private geometric backend and its numerical layers."""
 
-from genera import rtheta
-from genera.curves import _operations
+from generapy import rtheta
+from generapy.curves import _operations
 
 import pytest
 
 from mpmath import mp
-import genera.curves.continuation as continuation
-from genera.curves.geometry import _voronoi_plane_graph
-from genera.curves.polynomial import _prepare_plane_curve
-from genera.curves.quadrature import _legendre_edge_rule
-from genera.curves._stages import (
+import generapy.curves.continuation as continuation
+from generapy.curves.geometry import _voronoi_plane_graph
+from generapy.curves.polynomial import _prepare_plane_curve
+from generapy.curves.quadrature import _legendre_edge_rule
+from generapy.curves._stages import (
     _stage_geometric_periods,
 )
 from tests._support import make_curve
@@ -121,7 +121,7 @@ def test_geometric_cache_precision_and_clone_context():
 
 
 def test_geometric_riemann_constant_precision_and_normalization():
-    from genera.curves._stages import _stage_geometric_riemann_constant
+    from generapy.curves._stages import _stage_geometric_riemann_constant
 
     ctx = mp.clone()
     curve = _prepare_plane_curve(ctx, {(0, 3): 1, (4, 0): -1,
@@ -150,10 +150,10 @@ def test_geometric_riemann_constant_precision_and_normalization():
     ({(0, 3): 1, (4, 0): -1, (1, 0): 1, (0, 0): -1}, 3),
 ])
 def test_geometric_abel_theta_divisor_and_base_change(terms, genus):
-    from genera.curves._stages import (
+    from generapy.curves._stages import (
         _stage_geometric_riemann_constant,
     )
-    from genera.curves.polynomial import _ordered_plane_curve_sheets
+    from generapy.curves.polynomial import _ordered_plane_curve_sheets
 
     with mp.workdps(18):
         curve = _prepare_plane_curve(mp, terms)
@@ -188,8 +188,8 @@ def test_geometric_abel_theta_divisor_and_base_change(terms, genus):
 
 
 def test_geometric_abel_divisor_shares_only_operation_local_caches(monkeypatch):
-    import genera.curves.jacobian as jacobian
-    from genera.curves._stages import _geometric_abel_divisor
+    import generapy.curves.jacobian as jacobian
+    from generapy.curves._stages import _geometric_abel_divisor
 
     with mp.workdps(18):
         curve = _prepare_plane_curve(mp, {(0, 3): 1, (4, 0): -1,
@@ -225,5 +225,5 @@ def test_geometric_abel_divisor_shares_only_operation_local_caches(monkeypatch):
 
 
 def _geometric_abel_value(ctx, curve, place, base_place=None):
-    from genera.curves._stages import _geometric_abel_divisor
+    from generapy.curves._stages import _geometric_abel_divisor
     return _geometric_abel_divisor(ctx, curve, (place,), base_place=base_place)

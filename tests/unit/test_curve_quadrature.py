@@ -2,10 +2,10 @@ from tests._support import make_curve
 import pytest
 
 from mpmath import mp
-from genera.curves.continuation import _continue_plane_curve_sheets_adaptive
-from genera.curves.integration import _integrate_plane_curve_path
-from genera.curves.polynomial import _prepare_plane_curve
-from genera.curves.quadrature import (
+from generapy.curves.continuation import _continue_plane_curve_sheets_adaptive
+from generapy.curves.integration import _integrate_plane_curve_path
+from generapy.curves.polynomial import _prepare_plane_curve
+from generapy.curves.quadrature import (
     _geometric_edge_panels, _geometric_quadrature_order, _legendre_edge_rule,
 )
 
@@ -35,7 +35,7 @@ def test_geometry_quadrature_resolves_nearby_branch_value(dps):
 
 
 def test_edge_panels_resolve_deep_local_refinement_accurately():
-    from genera.curves.quadrature import _geometric_edge_panels, _legendre_edge_rule
+    from generapy.curves.quadrature import _geometric_edge_panels, _legendre_edge_rule
     with mp.workdps(30):
         branch = mp.mpc('0.137', '0.00001')
         panels = _geometric_edge_panels(mp, -1, 1, (branch,))
@@ -51,7 +51,7 @@ def test_edge_panels_resolve_deep_local_refinement_accurately():
 
 
 def test_edge_panel_work_and_representability_limits(monkeypatch):
-    import genera.curves.quadrature as quadrature
+    import generapy.curves.quadrature as quadrature
     calls = []
 
     def high_order(*args):

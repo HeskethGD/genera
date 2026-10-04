@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Serial, process-isolated genera/Sage first-kind period benchmarks."""
+"""Serial, process-isolated generapy/Sage first-kind period benchmarks."""
 import argparse
 import datetime as dt
 import hashlib
@@ -35,7 +35,7 @@ def acquire_run_lock(path):
 
 
 def source_hash():
-    files = sorted((REPO/'src/genera/curves').rglob('*.py'))
+    files = sorted((REPO/'src/generapy/curves').rglob('*.py'))
     files += sorted(HERE.glob('*.py'))
     return hashlib.sha256(b''.join(str(p.relative_to(REPO)).encode()+p.read_bytes() for p in files)).hexdigest()
 
@@ -107,7 +107,7 @@ def report(result):
         accuracy = 'passed' if checks and all(v=='passed' for v in checks) else ', '.join(sorted(set(checks)))
         median = f'{statistics.median(times):.4f}' if times else '—'
         lines.append(f'| {name} | {digits} | {engine} | {len(successes)}/{len(rows)} | {median} | {accuracy} |')
-    lines += ['', '## Validated timing ratios','', '| Case | Digits | Sage / genera | Ratio |', '|---|---:|---|---:|']
+    lines += ['', '## Validated timing ratios','', '| Case | Digits | Sage / generapy | Ratio |', '|---|---:|---|---:|']
     for (name,digits,engine),rows in groups.items():
         if engine=='sage':
             continue
@@ -117,7 +117,7 @@ def report(result):
             continue
         ratio = statistics.median(r['seconds'] for r in sage)/statistics.median(r['seconds'] for r in rows)
         lines.append(f'| {name} | {digits} | {engine} | {ratio:.3f} |')
-    lines += ['', 'Ratio > 1 means genera was faster. Single trials are observations, not statistical estimates.',
+    lines += ['', 'Ratio > 1 means generapy was faster. Single trials are observations, not statistical estimates.',
               'Failures, timeouts and budget skips are retained in results.json and samples.jsonl.',
               'Accuracy tolerance is relative 10^(-digits+5), against a separately computed higher-precision Sage result.',
               'Passing these checks is numerical evidence, not a rigorous error bound.', '',
@@ -140,7 +140,7 @@ def main():
     parser.add_argument('--budget',type=float,default=180,help='Whole-run wall budget, seconds')
     parser.add_argument('--timeout',type=float,default=60,help='Worker wall limit including startup')
     parser.add_argument('--sage',default='/usr/local/bin/sage')
-    parser.add_argument('--engines',nargs='+',choices=('genera','sage'),default=['genera','sage'])
+    parser.add_argument('--engines',nargs='+',choices=('generapy','sage'),default=['generapy','sage'])
     parser.add_argument('--reference-extra-digits',type=int,default=10)
     parser.add_argument('--working-extra-digits',type=int,default=15,
                         help='Extra working digits for BOTH engines, including input conversion')
@@ -170,7 +170,7 @@ def main():
     output.mkdir(parents=True,exist_ok=False)
     sys.path.insert(0,str(REPO/'src'))
     from mpmath import mp
-    import genera  # Ensure genera is importable from development checkout
+    import generapy  # Ensure generapy is importable from development checkout
     started = time.perf_counter()
     original_hash = source_hash()
     result = dict(schema=2,started_utc=dt.datetime.now(dt.timezone.utc).isoformat(),
@@ -194,7 +194,7 @@ def main():
         else:
             row.update(worker(dict(case=case,engine=engine,bits=mp.prec,repo=str(REPO)),args.sage,min(args.timeout,remaining)))
         if engine=='sage' and row.get('mpmath_path') and Path(row['mpmath_path']).is_relative_to(REPO):
-            row.update(status='wrong_import',error='Sage imported development genera/mpmath')
+            row.update(status='wrong_import',error='Sage imported development generapy/mpmath')
         if case['expected_rejection'] and engine!='sage':
             if row['status']=='error' and row.get('error_type')=='ValueError':
                 row['status']='expected_rejection'

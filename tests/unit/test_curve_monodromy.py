@@ -4,13 +4,13 @@ from tests._support import make_curve
 
 import pytest
 
-import genera.curves.monodromy as curve_monodromy
+import generapy.curves.monodromy as curve_monodromy
 from mpmath import mp
-from genera.curves.monodromy import (
+from generapy.curves.monodromy import (
     _compose_permutations, _monodromy_orbit, _permutation_cycles,
     _radial_plane_curve_monodromy, _riemann_hurwitz_genus,
 )
-from genera.curves.polynomial import _prepare_plane_curve
+from generapy.curves.polynomial import _prepare_plane_curve
 
 
 def test_permutation_composition_cycles_and_orbit():

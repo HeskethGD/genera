@@ -1,9 +1,9 @@
-Genera examples
-===============
+Generapy examples
+=================
 
 These examples demonstrate the algebraic-curve and Abelian-function APIs on
 problems from the mathematical literature. They are version-controlled with
-Genera but are not part of the installed ``genera`` package or wheel.
+Generapy but are not part of the installed ``generapy`` package or wheel.
 
 Run an example from the repository root using its module name, for example::
 
@@ -24,7 +24,7 @@ Examples
     Semenov-Tian-Shansky. The experimental genus-two route is intentionally
     not included.
     The ``curve_data`` companion computes marked Abel shifts and flow residues
-    from the spectral curve in Genera's geometric marking.
+    from the spectral curve in Generapy's geometric marking.
 
 ``kovalevskaya_original``
     The original theta-functional Kovalevskaya construction.

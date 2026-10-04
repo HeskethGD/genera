@@ -1,4 +1,4 @@
-# Solving the Neumann-Moser system with Genera Kleinian functions
+# Solving the Neumann-Moser system with Generapy Kleinian functions
 
 This note walks through the genus-two demo in this folder (`neumann_moser_kleinian_demo.py`) end to end: the equations, the solution formulas, the assumptions and fixes made along the way, and how the curve and initial point were chosen. The reference is P. G. Baron, [arXiv:2402.18079](https://arxiv.org/abs/2402.18079), with the solution theory quoted from V. M. Buchstaber, [arXiv:2402.09218](https://arxiv.org/abs/2402.09218). Corrections and convention details are documented at greater length in `project_update_part_18_neumann_moser_demo_2026-09-18.md`.
 
@@ -18,7 +18,7 @@ Two of the paper's printed equations needed repair here: the middle $\dot w$ ran
 
 The system is the Moser image of the classical C. Neumann problem (in imaginary time), coincides with the Mumford system on its $t_1$ flow, and is the 3-stationary KdV hierarchy; $\Gamma = 2\wp_2$ is the KdV solution.
 
-## 2. The curve and the Genera data
+## 2. The curve and the Generapy data
 
 Section 7.2 of the paper uses the canonical odd-degree curve
 
@@ -27,7 +27,7 @@ $$ y^2 = F(x) = 4x^5 + \lambda_4 x^3 + \lambda_6 x^2 + \lambda_8 x + \lambda_{10
 with no $x^4$ term, so the five branch points must sum to zero. The demo picks five distinct real roots summing to zero, $(-4, -1.5, -0.3, 1.3, 4.5)$, giving $\lambda_4 = -80.56$ and $\lambda_6 = -34.56$. Real roots keep $\tau$ purely imaginary and admit real trajectories.
 
 ```python
-from genera import kleinian_p
+from generapy import kleinian_p
 from mpmath import mp
 mp.dps = 30
 
@@ -63,7 +63,7 @@ $$
 
 The paper prints $p_{II}$ in place of $p_I$ in $W_\xi$; that cannot be right by degree count alone (it gives a degree-$g$ polynomial where $W_\xi$ has degree $g+1$), and Buchstaber's theorem confirms $p_I$. With this correction everything below checks numerically.
 
-**Index convention.** The paper writes $\wp_{2k} = -\partial^2 \log\sigma/\partial z_1 \partial z_{2k-1}$. Its $z_1$ is Genera Abelian coordinate **1** and its $z_3$ is coordinate **0** — found empirically via the Kleinian identities, but in fact forced by weights: with $\mathrm{wt}(x) = 2$ and $\mathrm{wt}(y) = 2g+1$ the coordinate from $x^r dx/y$ has weight $2g-1-2r$, while the paper's KdV times are weight-labelled $z_{2k-1}$, so $z_{2k-1}$ is always Genera coordinate $g-k$. Genera's ascending-power ordering ($dx/y$ first) matches the CEEK and Enolskii references it is validated against, as well as Sage and Abelfunctions; the paper's weight ordering is simply the reverse. Thus:
+**Index convention.** The paper writes $\wp_{2k} = -\partial^2 \log\sigma/\partial z_1 \partial z_{2k-1}$. Its $z_1$ is Generapy Abelian coordinate **1** and its $z_3$ is coordinate **0** — found empirically via the Kleinian identities, but in fact forced by weights: with $\mathrm{wt}(x) = 2$ and $\mathrm{wt}(y) = 2g+1$ the coordinate from $x^r dx/y$ has weight $2g-1-2r$, while the paper's KdV times are weight-labelled $z_{2k-1}$, so $z_{2k-1}$ is always Generapy coordinate $g-k$. Generapy's ascending-power ordering ($dx/y$ first) matches the CEEK and Enolskii references it is validated against, as well as Sage and Abelfunctions; the paper's weight ordering is simply the reverse. Thus:
 
 | Paper | `kleinian_p` indices |
 | --- | --- |
@@ -111,7 +111,7 @@ Four independent checks run alongside the trajectory:
 
 1. **RK4 comparison.** The seven expanded ODEs are integrated with classical RK4 from the analytic initial state; agreement at the level of pure truncation error validates the ODE transcription and the solution formulas together.
 2. **Spectral polynomial.** $H_\xi = U_\xi W_\xi + V_\xi^2$ must be constant and equal to the fixed curve $F(\xi)/4$ (the paper's integrals $h_i$ are $\lambda_i/4$, including $h_1 = 0$ forced by the canonical curve form). This held to $10^{-29}$ before any RK4 was run, isolating the solution formulas from the ODEs.
-3. **Kleinian identities.** The genus-two specialisations of the paper's relation (55) are checked as residuals, with the curve constant at $\lambda_4/2$ in this sigma normalisation — one quarter of the printed $2\lambda_4$, and exactly the classical Weierstrass constant $-g_2/2$: the genus-one reduction of the same Genera sigma reproduces $(\wp')^2 = 4\wp^3 - g_2\wp - g_3$ to rounding level, so the outlier is the printed constant, not this normalisation (the Manakov demo sees the same constant in Christiansen et al. equation (3.16)):
+3. **Kleinian identities.** The genus-two specialisations of the paper's relation (55) are checked as residuals, with the curve constant at $\lambda_4/2$ in this sigma normalisation — one quarter of the printed $2\lambda_4$, and exactly the classical Weierstrass constant $-g_2/2$: the genus-one reduction of the same Generapy sigma reproduces $(\wp')^2 = 4\wp^3 - g_2\wp - g_3$ to rounding level, so the outlier is the printed constant, not this normalisation (the Manakov demo sees the same constant in Christiansen et al. equation (3.16)):
 
 $$ \wp''_2 = 6\wp_2^2 + 4\wp_4 + \tfrac{\lambda_4}{2}, \qquad \wp''_4 = 6\wp_2\wp_4 - 2\wp_{3,3}. $$
 

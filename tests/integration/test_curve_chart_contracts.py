@@ -4,9 +4,9 @@ from tests._support import make_curve
 
 import pytest
 
-from genera import CurveChart
-from genera.curves.jacobian import _normalize_curve_endpoint
-from genera.curves.polynomial import _prepare_plane_curve
+from generapy import CurveChart
+from generapy.curves.jacobian import _normalize_curve_endpoint
+from generapy.curves.polynomial import _prepare_plane_curve
 from mpmath import mp
 
 

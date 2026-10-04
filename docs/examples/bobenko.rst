@@ -13,7 +13,7 @@ period matrix, flow velocity and marked-point shifts are supplied numerical
 data in the runnable script. This page checks the theta reconstruction;
 it does not reconstruct those data from a spectral curve.
 The :doc:`curve-data companion <bobenko_curve_data>` computes periods,
-marked-point Abel shifts and the flow velocity in Genera's geometric marking.
+marked-point Abel shifts and the flow velocity in Generapy's geometric marking.
 
 The physical equations
 -----------------------

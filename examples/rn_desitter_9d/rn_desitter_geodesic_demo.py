@@ -46,7 +46,7 @@ solved here by Newton iteration warm-started along the trajectory.
 Conventions and findings established in this folder:
 
 - The paper's differential basis du_i = x^(i-1) dx/y is the ascending
-  Genera ordering, so its u_1, u_2, u_3 are Genera coordinates 0, 1, 2:
+  Generapy ordering, so its u_1, u_2, u_3 are Generapy coordinates 0, 1, 2:
   the phi flow advances the last coordinate, sigma_3 is the sigma-jet
   key (0, 0, 1), and sigma_13, sigma_23 are the keys (1, 0, 1), (0, 1, 1).
 - Project update 16 flagged the printed quotient -sigma_23/sigma_13
@@ -69,7 +69,7 @@ Conventions and findings established in this folder:
   starts at e_2; the escape orbit starts at e_4 and approaches e_7 as
   r tends to infinity.
 
-Run from the Genera repository root with
+Run from the Generapy repository root with
 
     .venv/bin/python -m examples.rn_desitter_9d.rn_desitter_geodesic_demo
 """
@@ -77,7 +77,7 @@ Run from the Genera repository root with
 import argparse
 import time
 
-from genera import Curve, kleinian_sigma_jet
+from generapy import Curve, kleinian_sigma_jet
 from mpmath import mp, mpf, polyroots, quad, sqrt
 
 from examples._rk4 import rk4_step

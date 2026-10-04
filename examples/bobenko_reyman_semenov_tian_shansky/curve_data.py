@@ -3,7 +3,7 @@
 
 This companion to ``kowalewski_genus_three`` constructs the geometric data
 for H=3/2, I1=1/5, I2=27/5, following BRS (1989), equations (5.2)-(5.4)
-and (7.9). All periods and integrals use Genera's geometric marking.
+and (7.9). All periods and integrals use Generapy's geometric marking.
 No external period matrix or marked-point values enter the calculation.
 
 Run from the repository root:
@@ -18,7 +18,7 @@ recovery of physical initial conditions are outside this companion.
 import argparse
 from dataclasses import dataclass
 
-from genera import Curve
+from generapy import Curve
 from mpmath import mp
 
 

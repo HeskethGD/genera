@@ -1,1 +1,1 @@
-"""Genera's test suite."""
+"""Generapy's test suite."""

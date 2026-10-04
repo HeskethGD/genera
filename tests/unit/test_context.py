@@ -1,6 +1,6 @@
 from mpmath import mp
 
-from genera._context import ctx_lru_cache, resolve_context
+from generapy._context import ctx_lru_cache, resolve_context
 
 
 class FakeContext:

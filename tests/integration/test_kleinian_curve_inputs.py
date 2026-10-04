@@ -3,11 +3,11 @@
 import pytest
 from mpmath import mp
 
-from genera import (
+from generapy import (
     Curve, kleinian_p, kleinian_sigma, kleinian_sigma_jet,
     kleinian_sigma_normalization, kleinian_zeta,
 )
-from genera import kleinian as implementation
+from generapy import kleinian as implementation
 
 
 POLYNOMIAL = {(0, 2): 1, (3, 0): -4, (1, 0): 4}

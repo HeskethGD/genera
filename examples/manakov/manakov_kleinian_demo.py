@@ -10,7 +10,7 @@ Besides the RK4 and identity checks, the demo reconstructs the spectral
 divisor from one physical state and uses ``Curve.abel_map_kind_1`` to
 recover the original Abelian point modulo its full period lattice.
 
-Run from the Genera repository root with
+Run from the Generapy repository root with
 
     .venv/bin/python -m examples.manakov.manakov_kleinian_demo
 """
@@ -18,7 +18,7 @@ Run from the Genera repository root with
 import argparse
 from dataclasses import dataclass
 
-from genera import Curve, kleinian_p
+from generapy import Curve, kleinian_p
 from mpmath import mp
 
 from examples._rk4 import rk4_step, rk4_trajectory

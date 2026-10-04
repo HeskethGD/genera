@@ -80,7 +80,7 @@ The runnable script expands the polynomial into ascending coefficients
 and constructs compatible first-kind, second-kind and Riemann-constant
 data from one curve object::
 
-   from genera import Curve, kleinian_p
+   from generapy import Curve, kleinian_p
 
    curve = Curve({(0, 2): 1, **{(i, 0): -c for i, c in enumerate(coefficients)}})
    first = curve.periods_kind_1()
@@ -97,7 +97,7 @@ From Kleinian functions to the state
 ------------------------------------
 
 The paper labels Abelian coordinates by weight as :math:`z_1,z_3,z_5`.
-Genera orders its differential basis by ascending powers of :math:`s`,
+Generapy orders its differential basis by ascending powers of :math:`s`,
 so these correspond to API coordinates 2, 1 and 0 respectively.
 The P-functions used here map as follows:
 
@@ -147,7 +147,7 @@ The selected Abelian phase
 --------------------------
 
 To distinguish the Abelian vector from the dynamical coefficients
-:math:`u_i`, write Genera's vector as :math:`z_G`. This example uses
+:math:`u_i`, write Generapy's vector as :math:`z_G`. This example uses
 
 .. math::
 
@@ -193,7 +193,7 @@ inconsistencies in the expanded formulas of the cited paper. The middle
 wrong degree. The original walkthroughs in ``examples/neumann_moser/``
 record these details and the comparison with Buchstaber's solution.
 
-In Genera's sigma normalization, three additional identities are checked
+In Generapy's sigma normalization, three additional identities are checked
 at the phase origin:
 
 .. math::

@@ -4,7 +4,7 @@
 This demo follows the English translation of S. Kowalevski, "Sur le
 probleme de la rotation d'un corps solide autour d'un point fixe",
 Acta Mathematica 12 (1889) 177-232, kept at latex/kovalevskaya_top.tex,
-exercising Genera's algebraic-curve and Riemann-theta machinery.
+exercising Generapy's algebraic-curve and Riemann-theta machinery.
 
 Section 2 of the memoir reduces the Kowalevski case (A = B = 2C, z0 = 0,
 normalised to C = 1, y0 = 0, c0 = M g x0) to
@@ -46,7 +46,7 @@ s2 below e3; the solution is then given by Rosenhain theta quotients.
 Implementation notes
 --------------------
 * All marking-dependent quantities (tau, Abel coordinates, theta
-  characteristics) come from the Genera automatic hyperelliptic engine.
+  characteristics) come from the Generapy automatic hyperelliptic engine.
   Branch-point Abel images determine their half-characteristics in the
   Baker marking.  Riemann's vanishing theorem then gives the characteristic
   of each of the fifteen P-quotients; no characteristic search is used.
@@ -66,7 +66,7 @@ Stages (--stage): rk4, curve, abel, theta, demo, all.
 import argparse
 from dataclasses import dataclass
 
-from genera import Curve, rtheta
+from generapy import Curve, rtheta
 from mpmath import mp
 
 from examples._rk4 import rk4_trajectory as integrate_rk4
@@ -461,7 +461,7 @@ HALVES = ((0, 0), (0, 1), (1, 0), (1, 1))
 
 
 def characteristics():
-    """The sixteen two-torsion characteristics in Genera format."""
+    """The sixteen two-torsion characteristics in Generapy format."""
     return [((mp.mpf(ax) / 2, mp.mpf(ay) / 2),
              (mp.mpf(bx) / 2, mp.mpf(by) / 2))
             for ax, ay in HALVES for bx, by in HALVES]

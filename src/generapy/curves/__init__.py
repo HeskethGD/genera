@@ -9,7 +9,7 @@ evaluation of the computational pipeline: branch locus, monodromy, genus,
 homology, periods, and Riemann constant.
 
 Example:
-    >>> from genera import Curve
+    >>> from generapy import Curve
     >>> from mpmath import mp
     >>> mp.dps = 30
     >>> # Fermat cubic x^3 + y^3 = 1

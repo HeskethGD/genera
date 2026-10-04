@@ -4,7 +4,7 @@ from tests._support import make_curve
 from math import comb
 import pytest
 from mpmath import mp
-from genera.curves.polynomial import _critical_polynomial_roots
+from generapy.curves.polynomial import _critical_polynomial_roots
 
 
 @pytest.mark.parametrize('terms,shift', [
@@ -14,7 +14,7 @@ from genera.curves.polynomial import _critical_polynomial_roots
 ])
 @pytest.mark.parametrize('digits', [30, 50])
 def test_translated_critical_values(terms, shift, digits):
-    from genera.curves.polynomial import _plane_curve_critical_values
+    from generapy.curves.polynomial import _plane_curve_critical_values
     ctx = mp.clone()
     ctx.dps = digits
     translated = {}

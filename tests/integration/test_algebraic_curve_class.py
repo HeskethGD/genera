@@ -1,9 +1,9 @@
 from tests._support import make_curve, with_basis
 import warnings
 
-import genera
-from genera import CurveBranchLocus, Curve
-from genera.curves._stages import _stage_hyperelliptic_periods
+import generapy
+from generapy import CurveBranchLocus, Curve
+from generapy.curves._stages import _stage_hyperelliptic_periods
 from mpmath import mp
 
 
@@ -20,7 +20,7 @@ def test_unshipped_functional_curve_api_is_not_exported():
         "CurveFirstKindPeriods", "CurveSecondKindPeriods",
         "CurveSecondKindAbelMap",
     )
-    assert all(not hasattr(genera, name) for name in names)
+    assert all(not hasattr(generapy, name) for name in names)
 
 
 def test_curve_default_and_explicit_context_constructor():

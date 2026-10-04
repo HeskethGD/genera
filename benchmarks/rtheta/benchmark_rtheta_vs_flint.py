@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare genera rtheta with Python-FLINT's Riemann theta bindings.
+"""Compare generapy rtheta with Python-FLINT's Riemann theta bindings.
 
 Run this script with the dedicated comparison environment::
 
@@ -37,9 +37,9 @@ except ImportError as exc:  # pragma: no cover
         "Run with venv/flint/bin/python; python-flint is not available"
     ) from exc
 
-import genera
+import generapy
 from mpmath import mp
-genera_version = genera.__version__
+generapy_version = generapy.__version__
 
 from benchmark_rtheta_vs_wolfram import (  # noqa: E402
     BASE_POINTS,
@@ -391,7 +391,7 @@ def render_report(args, pointwise, repeated, failures):
         "",
         f"- Date: {datetime.date.today().isoformat()}",
         f"- Python: {platform.python_version()}",
-        f"- mpmath: {genera_version}",
+        f"- mpmath: {generapy_version}",
         f"- Python-FLINT: {flint.__version__}",
         f"- FLINT: {flint.__FLINT_VERSION__}",
         f"- Revision: `{revision}`",

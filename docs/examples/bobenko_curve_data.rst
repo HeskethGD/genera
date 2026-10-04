@@ -6,7 +6,7 @@ Abel shifts and the velocity of the Jacobian flow from the Kowalewski
 spectral curve [BRS1989]_. It demonstrates custom differentials and local
 charts, including a closed-loop integral for a residue at infinity.
 
-The calculation uses Genera's geometric marking throughout. The theta
+The calculation uses Generapy's geometric marking throughout. The theta
 solution in the other example uses an involution-adapted marking, so these
 vectors need a compatible change of cycles before they can replace its
 supplied data. The third-kind normalization scalar and recovery of physical

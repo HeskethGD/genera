@@ -23,7 +23,7 @@ For this demonstration,
 
    f(x)=x(x^2-1)(x^2-4).
 
-Genera uses the equivalent model
+Generapy uses the equivalent model
 
 .. math::
 
@@ -47,7 +47,7 @@ uses ``(x, y)``. Keeping that factor of two explicit is essential.
 
 The period and characteristic data are obtained from the same curve::
 
-   from genera import Curve, kleinian_sigma, kleinian_sigma_jet
+   from generapy import Curve, kleinian_sigma, kleinian_sigma_jet
 
    curve = Curve({(0, 2): 1, **{(i, 0): -c for i, c in enumerate(coefficients)}})
    first = curve.periods_kind_1()
@@ -160,7 +160,7 @@ is :math:`+1`.
 
 This is a local normalization calculation, rather than a sign chosen to
 make the numerical values agree. The standalone program reports both the
-paper's displayed sign and the sign in Genera's canonical convention.
+paper's displayed sign and the sign in Generapy's canonical convention.
 The residual uses the difference of the two complex values, so an
 unresolved sign or phase error would fail the check.
 
@@ -248,6 +248,6 @@ can be run with::
        --genus 2 --n 4 --kiepert-n 4 --coordinate 1 2 --dps 30
 
 Omitting these options runs the broader genus-three demonstration. Higher
-genera and larger determinants remain available, with increasing theta-series
+generapy and larger determinants remain available, with increasing theta-series
 and exact-polynomial costs. Matplotlib is imported only when requesting a
 figure.

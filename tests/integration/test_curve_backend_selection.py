@@ -3,9 +3,9 @@
 import pytest
 from mpmath import mp
 
-from genera import rtheta
-from genera.curves import _operations
-from genera.curves.algebraic_curve import CurvePlace
+from generapy import rtheta
+from generapy.curves import _operations
+from generapy.curves.algebraic_curve import CurvePlace
 from tests._support import make_curve, with_basis
 
 TERMS = {(0, 3): 1, (4, 0): -1, (1, 0): 1, (0, 0): -1}
@@ -104,7 +104,7 @@ def test_hyperelliptic_automatic_dispatch_stays_specialized(monkeypatch):
 
 
 def test_constructors_agree_and_monodromy_remains_diagnostic():
-    from genera.curves.algebraic_curve import Curve
+    from generapy.curves.algebraic_curve import Curve
     ctx = mp.clone()
     ctx.dps = 18
     terms = {(0, 3): 1, (3, 0): 1, (0, 0): -1}
@@ -169,7 +169,7 @@ def test_geometric_chart_endpoints_cutoffs_and_theta():
 
 
 def test_geometric_supplied_basis_is_coherent_across_operations(monkeypatch):
-    from genera.curves import _stages
+    from generapy.curves import _stages
     ctx = mp.clone()
     ctx.dps = 18
     curve = make_curve(ctx, TERMS)

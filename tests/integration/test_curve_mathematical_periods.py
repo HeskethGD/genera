@@ -107,10 +107,10 @@ def test_genus_two_supplied_periods_match_specialized_lattice():
 
 
 def test_geometric_iterated_cycles_obey_shuffle_and_reversal():
-    from genera.curves._stages import _stage_geometric_periods
-    from genera.curves.integration import _integrate_geometric_loops_iterated
-    from genera.curves.differentials import _baker_callable
-    from genera.curves.polynomial import _prepare_plane_curve
+    from generapy.curves._stages import _stage_geometric_periods
+    from generapy.curves.integration import _integrate_geometric_loops_iterated
+    from generapy.curves.differentials import _baker_callable
+    from generapy.curves.polynomial import _prepare_plane_curve
     ctx = mp.clone()
     ctx.dps = 18
     terms = {(0,3):1,(4,0):1,(0,0):-1}

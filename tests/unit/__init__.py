@@ -1,1 +1,1 @@
-"""Unit tests for Genera."""
+"""Unit tests for Generapy."""
