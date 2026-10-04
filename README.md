@@ -20,6 +20,8 @@ pip install genera
 
 Requires Python 3.11 or later.
 
+**Documentation:** https://genera.readthedocs.io/en/latest/
+
 ## Quick Example
 
 For example, verify Baker's genus-two addition formula using Kleinian sigma
