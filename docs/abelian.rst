@@ -138,6 +138,9 @@ the first derivative at the origin equal to one::
 
 Zeta and P-functions are independent of this multiplier and do not calculate it.
 
+The :doc:`Baker formula example <examples/baker_formula>` verifies the
+genus-two addition identity relating sigma ratios to Kleinian P functions.
+
 The :ref:`Ônishi sigma calculation <onishi-sigma-example>` uses
 ``kleinian_sigma`` and ``kleinian_sigma_jet`` on Abel images, including
 derivatives where sigma itself vanishes. The

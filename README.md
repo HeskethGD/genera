@@ -10,14 +10,43 @@ Genera uses [mpmath](https://mpmath.org/) for arbitrary-precision arithmetic.
 It is an independent project and does not modify the mpmath namespace.
 Genera retains the applicable BSD-3-Clause copyright and licence notice.
 
-Example usage:
+For example, verify Baker's genus-two addition formula using Kleinian sigma
+and P functions at arbitrary Abelian arguments. The identity is from
+H. F. Baker, *An Introduction to the Theory of Multiply Periodic Functions*
+(Cambridge University Press, 1907), Chapter V, p. 100
+([digitized edition](https://books.google.com/books?id=0EQLAAAAYAAJ&pg=PA100)):
 
 ```python
-from genera import Curve, kleinian_sigma, rtheta
+from mpmath import mp
 
-curve = Curve({(0, 2): 1, (1, 0): 1, (3, 0): -1})
-print(curve.genus)
+from genera import Curve
+from genera import kleinian_sigma as ks
+from genera import kleinian_p as kp
+
+mp.dps = 30
+
+# y² = 4x(x² - 1)(x² - 4) = 4x⁵ - 20x³ + 16x
+polynomial = {(0, 2): 1, (5, 0): -4, (3, 0): 20, (1, 0): -16}
+curve = Curve(polynomial)
+
+u = mp.matrix([mp.mpf("0.3"), mp.mpf("0.2")])
+v = mp.matrix([mp.mpf("0.1"), mp.mpf("0.4")])
+
+lhs = ks(u + v, curve=curve) * ks(u - v, curve=curve) / (
+    ks(u, curve=curve)**2 * ks(v, curve=curve)**2)
+
+# Baker's indices are one-based; Genera's indices are zero-based.
+p11_u, p12_u, p22_u = kp(u, curve=curve, indices=((0, 0), (0, 1), (1, 1)))
+p11_v, p12_v, p22_v = kp(v, curve=curve, indices=((0, 0), (0, 1), (1, 1)))
+rhs = p22_u * p12_v - p12_u * p22_v + p11_v - p11_u
+
+print(mp.nstr(abs(rhs - lhs), 6))  # 6.31089e-29
 ```
+
+The curve supplies the period data and canonical hyperelliptic sigma
+normalization automatically. See the [example walkthrough](docs/examples/baker_formula.rst)
+for the identity and conventions, or run the
+[complete example](examples/baker_formula/baker_formula_demo.py).
 
 ## Development
 

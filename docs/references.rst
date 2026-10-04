@@ -4,6 +4,11 @@ References
 The following works are cited by Genera's documentation and numerical
 implementations.
 
+.. [Baker1907] H. F. Baker. *An Introduction to the Theory of Multiply
+              Periodic Functions*. Cambridge University Press, Cambridge,
+              1907. Chapter V, p. 100.
+              `Digitized edition <https://books.google.com/books?id=0EQLAAAAYAAJ&pg=PA100>`_.
+
 .. [Baron2024] P. G. Baron. "The Neumann–Moser dynamical system and the
                Korteweg–de Vries hierarchy". arXiv:2402.18079 (2024).
                https://arxiv.org/abs/2402.18079
@@ -50,3 +55,8 @@ implementations.
                 Functions". *Proceedings of the Edinburgh Mathematical
                 Society* 48(3) (2005), 705--742.
                 https://arxiv.org/abs/math/0105189
+
+.. [BEH2005] H. W. Braden, V. Z. Enolskii and A. N. W. Hone.
+   *Bilinear recurrences and addition formulae for hyperelliptic sigma functions*.
+   Journal of Nonlinear Mathematical Physics **12**, Supplement 2 (2005), 46–62.
+   `Full text <https://www.atlantis-press.com/article/403.pdf>`_.

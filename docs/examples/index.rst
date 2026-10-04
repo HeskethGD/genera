@@ -9,6 +9,7 @@ repository's ``examples/`` directory.
 .. toctree::
    :maxdepth: 2
 
+   baker_formula
    bernatska
    bobenko
    bobenko_curve_data

@@ -12,6 +12,7 @@ ROOT = Path(__file__).parents[2]
 
 
 @pytest.mark.parametrize("module,arguments", [
+    ("examples.baker_formula.baker_formula_demo", ()),
     ("examples.bernatska.bernatska_trigonal_demo", ()),
     (
         "examples.bobenko_reyman_semenov_tian_shansky."
