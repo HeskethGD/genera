@@ -65,8 +65,10 @@ coefficients. Its period construction uses one curve object throughout::
    characteristic = curve.riemann_constant().characteristic
 
 These are mutually compatible half-periods, normalized periods,
-second-kind data and a theta characteristic. Reusing them avoids computing
-periods again at each point of the trajectory.
+second-kind data and a theta characteristic. The trajectory evaluator passes
+``curve=curve`` to ``kleinian_p``; the cached setup is reused at each point.
+The explicit matrices remain available for inspecting conventions and checking
+identities.
 
 .. _manakov-kleinian-example:
 

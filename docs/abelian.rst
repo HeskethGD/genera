@@ -71,19 +71,19 @@ Curve data for Kleinian functions
 
 Curve construction, homology markings, period matrices, Riemann constants,
 and Abel maps are documented in :doc:`algebraic_curves`. For a recognized
-hyperelliptic curve, one curve object provides mutually compatible inputs::
+hyperelliptic curve, the functions accept the curve directly::
 
-   curve = Curve({(0, 2): 1, (1, 0): 4, (3, 0): -4})
-   first = curve.periods_kind_1()
-   second = curve.periods_kind_2()
-   constant = curve.riemann_constant()
-   omega = first.omega
-   tau = first.tau
-   kappa = second.kappa
-   characteristic = constant.characteristic
+   polynomial = {(0, 2): 1, (1, 0): 4, (3, 0): -4}
+   curve = Curve(polynomial=polynomial)
+   value = kleinian_sigma([0.2], curve=curve)
+   wp = kleinian_p([0.2], indices=(0, 0), curve=polynomial)
 
-The same curve supplies first- and second-kind Abelian integrals. Period data
-should normally be constructed once and reused for many evaluations.
+A sparse mapping is sufficient for automatic bases. A ``Curve`` also carries
+custom bases and its numerical context. Point-independent setup is cached by
+context and precision for repeated evaluations. The specialist route accepts
+``omega``, ``tau``, ``kappa``, and ``characteristic`` explicitly; all must refer
+to the same basis and homology marking. Curve and explicit period inputs cannot
+be mixed.
 The optional ``ctx`` argument uses the same convention throughout Genera;
 see the :ref:`Curve constructor examples <numerical-contexts>` for an
 independent-precision example.
@@ -117,14 +117,34 @@ Riemann matrix ``tau``, and the symmetric matrix ``kappa``. The convention is
    \end{aligned}
 
 The characteristic uses the same literal convention as :func:`genera.rtheta`.
-For compatible hyperelliptic curve data, the canonical normalization is
-selected with ``normalization="hyperelliptic"``.
+The explicit-period route retains the zero-characteristic default; curve-based
+calls derive the curve's Riemann characteristic.
+Curve-based sigma calls automatically select hyperelliptic normalization for
+the automatic hyperelliptic basis, and theta scaling (multiplier one) otherwise.
+Explicit-period calls default to theta scaling; ``normalization="hyperelliptic"``
+selects the hyperelliptic convention when those inputs use its basis and
+characteristic. Other curves currently require compatible second-kind forms
+bound to ``Curve``; automatic second-kind construction and Schur normalization
+for general ``(n,s)`` curves are not yet available.
+
+``kleinian_sigma_normalization`` returns the scalar multiplier independently.
+It requires no second-kind matrix. For example, in genus one its result makes
+the first derivative at the origin equal to one::
+
+   C = kleinian_sigma_normalization(curve=curve)
+   raw = kleinian_sigma_jet([0], curve=curve, order=1,
+                           normalization="theta")
+   normalized_derivative = C * raw[(1,)]
+
+Zeta and P-functions are independent of this multiplier and do not calculate it.
 
 The :ref:`Ônishi sigma calculation <onishi-sigma-example>` uses
 ``kleinian_sigma`` and ``kleinian_sigma_jet`` on Abel images, including
 derivatives where sigma itself vanishes. The
 :ref:`Manakov solution <manakov-kleinian-example>` uses batched
 ``kleinian_p`` evaluations to reconstruct amplitudes and momenta.
+
+.. autofunction:: genera.kleinian_sigma_normalization
 
 .. autofunction:: genera.kleinian_sigma
 

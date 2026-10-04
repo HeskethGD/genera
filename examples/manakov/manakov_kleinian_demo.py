@@ -107,9 +107,8 @@ def analytic_state(x, data):
     """Return q1, p1, q2, p2 from the Kleinian solution."""
     u = [data["u_offset"][0], data["u_offset"][1] + x]
     wp22, wp12, wp222, wp122 = kleinian_p(
-        u, data["omega"], data["tau"], data["kappa"],
-        ((1, 1), (0, 1), (1, 1, 1), (0, 1, 1)),
-        data["characteristic"],
+        u, curve=data["curve"],
+        indices=((1, 1), (0, 1), (1, 1, 1), (0, 1, 1)),
     )
     a1 = data["a1"]
     a2 = data["a2"]
