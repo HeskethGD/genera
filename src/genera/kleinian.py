@@ -1,11 +1,113 @@
 import math
 from itertools import product
 
-from ._context import ctx_lru_cache, resolve_context
+from ._context import _context_state, ctx_lru_cache, resolve_context
+from .curves import Curve
 from .riemann_theta import (
     _as_vector, _matrix_tuple, _multiindices, _normalise_characteristic,
     _normalise_tau, _rtheta_tau_data, rtheta_jet,
 )
+
+
+def _curve_function_data(curve, second_kind=True):
+    """Cache immutable, point-independent curve data at working precision."""
+    state = (_context_state(curve.ctx), second_kind)
+    cache = getattr(curve, "_kleinian_data", None)
+    if cache is None:
+        cache = curve._kleinian_data = {}
+    if state not in cache:
+        if second_kind:
+            curve._require_second_kind_basis("Kleinian evaluation")
+        first = curve.periods_kind_1()
+        second = curve.periods_kind_2() if second_kind else None
+        characteristic = curve.riemann_constant().characteristic
+        cache[state] = (
+            _matrix_tuple(first.omega), _matrix_tuple(first.tau),
+            _matrix_tuple(second.kappa) if second is not None else None,
+            tuple(tuple(row) for row in characteristic),
+            "hyperelliptic" if (curve._hyperelliptic_model is not None
+                                 and not curve._custom_basis) else "theta")
+    return cache[state]
+
+
+@ctx_lru_cache(maxsize=16)
+def _mapped_curve_function_data(ctx, polynomial_key, second_kind):
+    """Share numerical setup for equivalent sparse maps without retaining ctx."""
+    return _curve_function_data(Curve(dict(polynomial_key), ctx=ctx), second_kind)
+
+
+def _resolve_kleinian_inputs(omega, tau, kappa, characteristic, curve, ctx,
+                             normalization=None, second_kind=True):
+    """Resolve either explicit periods or a curve, before adding guard bits."""
+    if curve is None:
+        ctx = resolve_context(ctx)
+        if omega is None or tau is None or (second_kind and kappa is None):
+            raise ValueError("either curve or complete explicit period data are required")
+        return (ctx, omega, tau, kappa, characteristic,
+                "theta" if normalization is None else normalization)
+    if any(value is not None for value in (omega, tau, kappa, characteristic)):
+        raise ValueError("curve cannot be combined with explicit period data or characteristic")
+    if isinstance(curve, Curve):
+        if ctx is not None and ctx is not curve.ctx:
+            raise ValueError("ctx must be the Curve numerical context")
+        ctx = curve.ctx
+        data = _curve_function_data(curve, second_kind)
+    else:
+        ctx = resolve_context(ctx)
+        # Curve validates exponents and coefficients before a key is constructed.
+        prepared = Curve(curve, ctx=ctx)
+        key = tuple(sorted(prepared.polynomial.items()))
+        data = _mapped_curve_function_data(ctx, key, second_kind)
+    omega, tau, kappa, characteristic, automatic = data
+    if normalization == "hyperelliptic" and automatic != "hyperelliptic":
+        raise ValueError("hyperelliptic normalization requires the automatic hyperelliptic basis")
+    return (ctx, omega, tau, kappa, characteristic,
+            automatic if normalization is None else normalization)
+
+
+def kleinian_sigma_normalization(omega=None, tau=None, characteristic=None,
+                                 normalization=None, *, curve=None, ctx=None):
+    """Return the multiplicative constant C in the Kleinian sigma function.
+
+    ``curve`` is a Curve or sparse polynomial mapping. Its automatic
+    hyperelliptic basis selects hyperelliptic normalization; other bases use
+    theta scaling (C = 1). Only first-kind periods and the characteristic are
+    needed. Explicit ``omega``, ``tau``, and ``characteristic`` use theta
+    scaling unless ``normalization="hyperelliptic"`` is selected.
+    ``ctx`` defaults to the curve's context or mpmath.mp. Explicit theta
+    scaling returns one without requiring or evaluating period data.
+    """
+    if normalization is None and curve is not None:
+        if not isinstance(curve, Curve):
+            curve = Curve(curve, ctx=ctx)
+        if curve._hyperelliptic_model is None or curve._custom_basis:
+            normalization = "theta"
+    # Theta scaling needs no origin derivatives or curve period computations.
+    if normalization == "theta":
+        if curve is not None and any(value is not None for value in
+                                     (omega, tau, characteristic)):
+            raise ValueError("curve cannot be combined with explicit period data or characteristic")
+        if isinstance(curve, Curve):
+            if ctx is not None and ctx is not curve.ctx:
+                raise ValueError("ctx must be the Curve numerical context")
+            ctx = curve.ctx
+        elif curve is not None:
+            Curve(curve, ctx=ctx)
+        return resolve_context(ctx).one
+    ctx, omega, tau, _, characteristic, normalization = _resolve_kleinian_inputs(
+        omega, tau, None, characteristic, curve, ctx, normalization,
+        second_kind=False)
+    with ctx.extraprec(10):
+        omega = _normalise_kleinian_matrix(ctx, omega, "omega")
+        tau = _normalise_tau(ctx, tau)
+        if tau.rows != omega.rows:
+            raise ValueError("tau and omega must have the same size")
+        characteristic = _normalise_characteristic(ctx, characteristic, omega.rows)
+        tau_key = _matrix_tuple(tau)
+        inverse = ctx.matrix(_kleinian_period_data(ctx, _matrix_tuple(omega), tau_key))
+        result = _sigma_normalization_constant(ctx, normalization, inverse,
+                                               tau_key, characteristic)
+    return +result
 
 
 def _normalise_kleinian_matrix(ctx, value, name, genus=None, symmetric=False):
@@ -266,8 +368,8 @@ def _normalise_p_indices(indices, genus):
     return requested, scalar
 
 
-def kleinian_sigma(u, omega, tau, kappa, characteristic=None,
-                    normalization="theta", *, ctx=None):
+def kleinian_sigma(u, omega=None, tau=None, kappa=None, characteristic=None,
+                    normalization=None, *, curve=None, ctx=None):
     r"""
     Kleinian sigma function.
 
@@ -283,10 +385,19 @@ def kleinian_sigma(u, omega, tau, kappa, characteristic=None,
     :math:`\eta\omega^{-1}`. The characteristic uses the literal
     ``(a, b)`` convention of :func:`~genera.rtheta`.
 
-    The default ``normalization="theta"`` uses :math:`C=1`, which is defined
+    ``curve`` accepts a ``Curve`` or a sparse polynomial mapping. Its periods,
+    second-kind matrix, and Riemann characteristic are selected together;
+    explicit period inputs cannot be combined with ``curve``. ``ctx`` defaults
+    to the Curve's context, or to ``mpmath.mp`` for a mapping or explicit data.
+    The vector ``u`` uses the Curve's ordered first-kind differential basis.
+
+    With ``normalization=None``, the automatic hyperelliptic basis selects
+    hyperelliptic normalization; custom bases and other curves select theta
+    scaling. The explicit-period route defaults to theta scaling.
+    ``normalization="theta"`` uses :math:`C=1`, which is defined
     for arbitrary coherent period data. ``normalization="hyperelliptic"``
-    chooses :math:`C` so that the leading term at the origin is the
-    Schur--Weierstrass polynomial
+    chooses :math:`C` so that the lowest ordinary-degree term at the origin
+    is the hyperelliptic Hankel polynomial
 
     .. math::
 
@@ -299,14 +410,16 @@ def kleinian_sigma(u, omega, tau, kappa, characteristic=None,
     [BEL1997]_, Definition 1.
 
     """
-    ctx = resolve_context(ctx)
+    ctx, omega, tau, kappa, characteristic, normalization = (
+        _resolve_kleinian_inputs(omega, tau, kappa, characteristic,
+                                 curve, ctx, normalization))
     with ctx.extraprec(10):
         data = _kleinian_theta_data(
             ctx, u, omega, tau, kappa, characteristic, 0)
         u, inverse_period, tau_key, kappa, characteristic, theta_data = data
         theta = theta_data[(0,) * len(u)]
-        constant = _sigma_normalization_constant(
-            ctx, normalization, inverse_period, tau_key, characteristic)
+        constant = kleinian_sigma_normalization(
+            omega, tau_key, characteristic, normalization, ctx=ctx)
         quadratic = ctx.fsum(
             u[i] * kappa[i, j] * u[j]
             for i in range(len(u)) for j in range(len(u)))
@@ -314,8 +427,9 @@ def kleinian_sigma(u, omega, tau, kappa, characteristic=None,
     return +result
 
 
-def kleinian_baker_akhiezer(u, abel, second_kind, omega, tau, kappa,
-                             characteristic=None, *, ctx=None):
+def kleinian_baker_akhiezer(u, abel=None, second_kind=None, omega=None,
+                             tau=None, kappa=None, characteristic=None, *,
+                             curve=None, target=None, reduce=False, ctx=None):
     r"""
     Evaluate the normalized odd-degree Kleinian Baker--Akhiezer function.
 
@@ -338,6 +452,12 @@ def kleinian_baker_akhiezer(u, abel, second_kind, omega, tau, kappa,
     depending on :math:`P` and gives the standard leading local behavior at
     the unique point at infinity. See [Onishi2005]_, Definition 6.1 and
     Proposition 6.6, and [BEH2005]_, equation (3.3).
+
+    Alternatively, ``curve`` and ``target`` derive both integrals and the
+    period data together. This route requires the automatic odd-degree
+    hyperelliptic basis, with infinity as the base point. ``reduce`` applies
+    the same lattice reduction to both Abel maps. Explicit integral vectors
+    and period data cannot be combined with this route.
 
     ``abel`` and ``second_kind`` should normally be obtained from
     ``Curve.abel_map_kind_1`` and the ``value`` field returned by
@@ -363,6 +483,20 @@ def kleinian_baker_akhiezer(u, abel, second_kind, omega, tau, kappa,
     an additional marked-infinity convention.
 
     """
+    if curve is not None:
+        if target is None or abel is not None or second_kind is not None:
+            raise ValueError("the BA curve route requires target instead of integral vectors")
+        if not isinstance(curve, Curve):
+            curve = Curve(curve, ctx=ctx)
+        model = curve._hyperelliptic_model
+        if model is None or curve._custom_basis or len(model.coefficients) % 2:
+            raise ValueError("the BA curve route requires an automatic odd-degree hyperelliptic curve")
+        ctx, omega, tau, kappa, characteristic, _ = _resolve_kleinian_inputs(
+            omega, tau, kappa, characteristic, curve, ctx)
+        abel = curve.abel_map_kind_1(target, reduce=reduce).value
+        second_kind = curve.abel_map_kind_2(target, reduce=reduce).value
+    elif target is not None or reduce:
+        raise ValueError("target and reduce require curve")
     ctx = resolve_context(ctx)
     with ctx.extraprec(10):
         omega_matrix = _normalise_kleinian_matrix(ctx, omega, "omega")
@@ -388,9 +522,9 @@ def kleinian_baker_akhiezer(u, abel, second_kind, omega, tau, kappa,
     return +result
 
 
-def kleinian_sigma_jet(u, omega, tau, kappa, order,
-                       characteristic=None, normalization="theta", *,
-                       ctx=None):
+def kleinian_sigma_jet(u, omega=None, tau=None, kappa=None, order=None,
+                       characteristic=None, normalization=None, *,
+                       curve=None, ctx=None):
     r"""
     Evaluate a derivative jet of the Kleinian sigma function.
 
@@ -432,7 +566,9 @@ def kleinian_sigma_jet(u, omega, tau, kappa, order,
         [(0, 0), (1, 0), (0, 1), (2, 0), (1, 1), (0, 2)]
 
     """
-    ctx = resolve_context(ctx)
+    ctx, omega, tau, kappa, characteristic, normalization = (
+        _resolve_kleinian_inputs(omega, tau, kappa, characteristic,
+                                 curve, ctx, normalization))
     if not isinstance(order, int) or order < 0:
         raise ValueError("order must be a nonnegative integer")
     with ctx.extraprec(10):
@@ -441,8 +577,8 @@ def kleinian_sigma_jet(u, omega, tau, kappa, order,
         u, inverse_period, tau_key, kappa, characteristic, theta_jet = data
         genus = len(u)
         indices = tuple(_multiindices(genus, order))
-        constant = _sigma_normalization_constant(
-            ctx, normalization, inverse_period, tau_key, characteristic)
+        constant = kleinian_sigma_normalization(
+            omega, tau_key, characteristic, normalization, ctx=ctx)
 
         theta_derivatives = {}
         derivative_cache = {(): theta_jet[(0,) * genus]}
@@ -470,7 +606,8 @@ def kleinian_sigma_jet(u, omega, tau, kappa, order,
     return {index: +value for index, value in result.items()}
 
 
-def kleinian_zeta(u, omega, tau, kappa, characteristic=None, *, ctx=None):
+def kleinian_zeta(u, omega=None, tau=None, kappa=None, characteristic=None, *,
+                   curve=None, ctx=None):
     r"""
     Kleinian zeta vector in unnormalized Abelian coordinates.
 
@@ -479,7 +616,9 @@ def kleinian_zeta(u, omega, tau, kappa, characteristic=None, *, ctx=None):
     :func:`~genera.kleinian_sigma`.
 
     """
-    ctx = resolve_context(ctx)
+    ctx, omega, tau, kappa, characteristic, normalization = (
+        _resolve_kleinian_inputs(omega, tau, kappa, characteristic,
+                                 curve, ctx, "theta"))
     with ctx.extraprec(10):
         data = _kleinian_theta_data(
             ctx, u, omega, tau, kappa, characteristic, 1,
@@ -499,8 +638,8 @@ def kleinian_zeta(u, omega, tau, kappa, characteristic=None, *, ctx=None):
     return +result
 
 
-def kleinian_p(u, omega, tau, kappa, indices, characteristic=None, *,
-               ctx=None):
+def kleinian_p(u, omega=None, tau=None, kappa=None, indices=None,
+               characteristic=None, *, curve=None, ctx=None):
     r"""
     Evaluate one or several Kleinian P-functions.
 
@@ -526,7 +665,9 @@ def kleinian_p(u, omega, tau, kappa, indices, characteristic=None, *,
     :func:`~genera.kleinian_sigma`.
 
     """
-    ctx = resolve_context(ctx)
+    ctx, omega, tau, kappa, characteristic, normalization = (
+        _resolve_kleinian_inputs(omega, tau, kappa, characteristic,
+                                 curve, ctx, "theta"))
     omega_matrix = _normalise_kleinian_matrix(ctx, omega, "omega")
     requested, scalar = _normalise_p_indices(indices, omega_matrix.rows)
     degree = max(map(len, requested))
