@@ -23,6 +23,7 @@ from .polynomial import (
     _newton_plane_curve_sheet,
     _ordered_plane_curve_sheets,
     _plane_curve_sheets,
+    _plane_curve_sheet_separation_bound,
 )
 
 # Base-plane paths
@@ -291,7 +292,11 @@ def _continue_plane_curve_sheets_adaptive(
 def _continue_plane_curve_branch(
         ctx, curve, path, initial_y, max_refinements=12,
         max_newton_steps=20):
-    """Continue one simple branch, including from a local-chart endpoint."""
+    """Continue a simple branch with separation and step-doubling checks.
+
+    These are numerical consistency safeguards: they do not certify that
+    an arbitrary user-supplied segment avoids every critical value.
+    """
     path = tuple(ctx.convert(point) for point in path)
     if not path:
         raise ValueError("the branch path must contain at least one point")
@@ -326,28 +331,59 @@ def _continue_plane_curve_branch(
         "refinements": 0,
     }
 
-    def advance(left, right, value, depth):
+    def trial(left, right, value, separation):
         derivative_x = _evaluate_plane_derivative(
             ctx, curve, left, value, "x")
         derivative_y = _evaluate_plane_derivative(
             ctx, curve, left, value, "y")
         prediction = value - derivative_x * (right - left) / derivative_y
-        (candidate, _unused_residual, _unused_derivative, _unused_scale,
+        (candidate, _unused_residual, candidate_derivative, candidate_scale,
          converged) = _newton_plane_curve_sheet(
-             ctx, curve, right, prediction, maxsteps=max_newton_steps)
+             ctx, curve, right, prediction, maxsteps=max_newton_steps,
+             allow_degree_drop=True)
 
-        correction = abs(candidate - prediction)
-        motion = abs(candidate - value)
-        acceptable = (converged
-                      and correction <= max(ctx.one, motion) / 4)
+        if (not converged or not ctx.isfinite(candidate)
+                or abs(candidate_derivative) <= 100 * ctx.sqrt(ctx.eps) * candidate_scale):
+            return candidate, ctx.zero, False
+        next_separation = _plane_curve_sheet_separation_bound(
+            ctx, curve, right, candidate)
+        gap = min(separation, next_separation)
+        acceptable = (abs(candidate - prediction) <= gap / 5
+                      and abs(candidate - value) <= 2 * gap / 5)
+        return candidate, next_separation, acceptable
+
+    def advance(left, right, value, separation, depth):
+        if left == right:
+            return value, separation
+        midpoint = (left + right) / 2
+        candidate, next_separation, acceptable = trial(
+            left, right, value, separation)
+        if acceptable:
+            middle, middle_separation, half_ok = trial(
+                left, midpoint, value, separation)
+            if half_ok:
+                doubled, doubled_separation, half_ok = trial(
+                    midpoint, right, middle, middle_separation)
+                # Compare branch labels rather than demanding extra Newton
+                # accuracy from a second solve (residual tolerances depend
+                # on polynomial scaling).
+                tolerance = min(next_separation, doubled_separation) / 10
+                acceptable = half_ok and abs(candidate - doubled) <= tolerance
+                if acceptable:
+                    candidate, next_separation = doubled, doubled_separation
+            else:
+                acceptable = False
         if not acceptable:
             if depth >= max_refinements:
                 raise ctx.NoConvergence(
                     "single-branch continuation did not resolve a segment")
-            midpoint = (left + right) / 2
+            if midpoint == left or midpoint == right:
+                raise ctx.NoConvergence(
+                    "single-branch continuation path cannot be subdivided further")
             diagnostics["refinements"] += 1
-            middle = advance(left, midpoint, value, depth + 1)
-            return advance(midpoint, right, middle, depth + 1)
+            middle, middle_separation = advance(
+                left, midpoint, value, separation, depth + 1)
+            return advance(midpoint, right, middle, middle_separation, depth + 1)
 
         residual = abs(_evaluate_plane_polynomial(
             ctx, curve, right, candidate))
@@ -359,11 +395,12 @@ def _continue_plane_curve_branch(
             diagnostics["min_derivative"], derivative)
         accepted_path.append(right)
         accepted_values.append(candidate)
-        return candidate
+        return candidate, next_separation
 
     value = initial_y
+    separation = _plane_curve_sheet_separation_bound(ctx, curve, path[0], value)
     for left, right in itertools.pairwise(path):
-        value = advance(left, right, value, 0)
+        value, separation = advance(left, right, value, separation, 0)
     return _BranchContinuation(
         values=tuple(accepted_values),
         max_residual=diagnostics["max_residual"],

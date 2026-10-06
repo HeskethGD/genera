@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Fixed
+
+- Chart continuation now checks local sheet separation and full-step/half-step
+  consistency, preventing the silent branch switch reported in issue #4.
+  Ambiguous quadrature nodes are refined and checked against endpoint branch
+  labels. Unresolved continuation raises `NoConvergence`.
+
 ## [0.1.0] - 2026-10-04
 
 ### Initial Release

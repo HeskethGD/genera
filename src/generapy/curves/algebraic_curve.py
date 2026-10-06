@@ -770,6 +770,12 @@ class Curve:
         values along which the branch is continued from ``seed`` at
         ``t_path[0]``.  Closed chart loops therefore compute residues of
         pulled-back forms at the place.
+
+        Continuation refines segments using local sheet separation and
+        full-step/half-step consistency checks. Unresolved continuation or
+        inconsistent quadrature branch labels raise ``ctx.NoConvergence``.
+        These numerical checks do not certify that the supplied path avoids
+        all critical values of the chart projection.
         """
         self._check_precision()
         return charts.chart_integral(

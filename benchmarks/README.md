@@ -95,6 +95,28 @@ The curve benchmarks compare generapy's period computation against SageMath.
 - `--engines mpmath sage`: Which implementations to test (default: both)
 - `--sage /path/to/sage`: Custom Sage path
 
+### Chart Continuation Benchmarks
+
+Time single-branch continuation and complete chart integrals at several
+precisions, checking each integral against independent quadrature or an
+exact primitive:
+
+```bash
+.venv/bin/python benchmarks/curves/benchmark_chart_continuation.py \
+  --source src --digits 20 40 80 --trials 5
+```
+
+Use `--source /path/to/other/src` in a separate run to compare another
+checkout or a saved source snapshot. Each run imports only that source;
+no external mathematics engines are used. Run comparisons sequentially,
+without tests or other benchmarks competing for CPU. The script emits
+JSON to stdout and progress to stderr. Construction, reference evaluation,
+and warm-up are excluded from timing; complete integral timings include
+continuation and quadrature-rule construction. Continuation samples average
+20 calls each (`--continuation-repeats`), and reported times are medians.
+Accuracy is reported alongside timing so an incorrect result is not treated
+as a successful performance baseline.
+
 ### Riemann Theta Benchmarks
 
 **Compare against Wolfram Engine:**
