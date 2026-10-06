@@ -8,6 +8,106 @@ from generapy.curves._hyperelliptic import (
 from generapy.curves._hyperelliptic import integration as hyperelliptic_integration
 from generapy.curves._hyperelliptic import jacobian as hyperelliptic_jacobian
 from generapy.curves._hyperelliptic import model as hyperelliptic_model
+from generapy.curves._hyperelliptic import operations as hyperelliptic_operations
+
+
+def test_finite_base_abel_cancels_shared_references_and_preserves_validation(monkeypatch):
+    ctx = mp.clone()
+    ctx.dps = 25
+    curve = make_curve(ctx, {(0, 2): 1, (3, 0): -4, (1, 0): 4})
+    original = hyperelliptic_operations._hyperelliptic_intervals
+    calls = []
+
+    def counted(*args):
+        calls.append(args[0].prec)
+        return original(*args)
+
+    monkeypatch.setattr(hyperelliptic_operations, '_hyperelliptic_intervals', counted)
+
+    def reference(x):
+        return ctx.quad(lambda t: 1/ctx.sqrt((1+t*t)*(2+t*t)), [0, ctx.sqrt(x-1)])
+
+    for x in (2, 3):
+        y = 2*ctx.sqrt(x**3-x)
+        value = curve.abel_map_kind_1((x, y), base_place=(1, 0)).value
+        assert abs(value[0]-reference(x)) < 1000*ctx.eps
+        value[0] = 999
+    # Shared branch references cancel without computing global integrals.
+    assert len(calls) == 0
+    negative = curve.abel_map_kind_1((3, -ctx.sqrt(96)), base_place=(1, 0)).value[0]
+    assert abs(negative+reference(3)) < 1000*ctx.eps
+    increment = curve.abel_map_kind_1((3, ctx.sqrt(96)), base_place=(2, ctx.sqrt(24))).value[0]
+    assert abs(increment-(reference(3)-reference(2))) < 1000*ctx.eps
+    with pytest.raises(ValueError, match='target point must satisfy'):
+        curve.abel_map_kind_1((3, 1), base_place=(1, 0))
+    with pytest.raises(ValueError, match='target point must satisfy'):
+        curve.abel_map_kind_1((3, ctx.sqrt(96)), base_place=(2, 1))
+    assert len(calls) == 0
+    # A different curve must not inherit these branch integrals.
+    scaled = make_curve(ctx, {(0, 2): 1, (3, 0): -16, (1, 0): 16})
+    assert abs(scaled.abel_map_kind_1((3, 2*ctx.sqrt(96)), base_place=(1, 0)).value[0]
+               -reference(3)/2) < 1000*ctx.eps
+    assert len(calls) == 0
+    # Different references require the full marked branch data.
+    curve.abel_map_kind_1((3, ctx.sqrt(96)), base_place=(-1, 0))
+    curve.abel_map_kind_1((2, ctx.sqrt(24)), base_place=(-1, 0))
+    assert len(calls) == 1
+    assert hyperelliptic_operations._hyperelliptic_abel_data.cache_info(ctx).maxsize == 8
+
+
+@pytest.mark.parametrize('coefficients, branch, remote', [
+    ([0, -4, 0, 4], 1, -1),
+    ([24, 14, -13, -2, 1], 4, -3),
+    ([0, 16, 0, -20, 0, 4], 2, -2),
+])
+@pytest.mark.parametrize('regular_base', [False, True])
+def test_local_abel_difference_preserves_marked_divisors_and_reduction(
+        coefficients, branch, remote, regular_base):
+    ctx = mp.clone()
+    ctx.dps = 30
+    curve = make_curve(ctx, {(0, 2): 1, **{
+        (degree, 0): -value for degree, value in enumerate(coefficients) if value}})
+    def point(x, sign=1):
+        return (ctx.mpf(x), sign*ctx.sqrt(ctx.polyval(coefficients, x, asc=True)))
+    base = point(branch+1) if regular_base else (branch, 0)
+    targets = [point(branch+2), point(branch+3, -1), (branch, 0)]
+    absolute_base = _hyperelliptic_abel_map(ctx, coefficients, base)
+    for divisor in (targets, targets+[(remote, 0)], []):
+        expected = (_hyperelliptic_abel_map(ctx, coefficients, divisor)
+                    -len(divisor)*absolute_base)
+        actual = curve.abel_map_kind_1(divisor, base_place=base).value
+        assert ctx.norm(actual-expected) < 1000*ctx.eps
+    expected = (_hyperelliptic_abel_map(ctx, coefficients, targets)
+                -len(targets)*absolute_base)
+    reduced = curve.lattice_reduce(expected, curve.periods_kind_1())
+    actual = curve.abel_map_kind_1(targets, base_place=base, reduce=True)
+    assert ctx.norm(actual.value-reduced.value) < 1000*ctx.eps
+    assert actual.reduction_shift == reduced.shift
+
+
+@pytest.mark.parametrize('second_kind', [False, True])
+def test_hyperelliptic_abel_invariant_cache_separates_guard_precision_and_context(second_kind):
+    ctx = mp.clone()
+    coefficients = [0, -4, 0, 4]
+    def evaluate(context):
+        return _hyperelliptic_abel_map(context, coefficients, (1, 0), second_kind=second_kind)
+
+    ctx.dps = 15
+    evaluate(ctx)
+    stats = hyperelliptic_operations._hyperelliptic_abel_data.cache_info(ctx)
+    assert stats.misses == 1
+    with ctx.workdps(30):
+        first = evaluate(ctx)
+        evaluate(ctx)
+        assert hyperelliptic_operations._hyperelliptic_abel_data.cache_info(ctx).misses == 2
+        hyperelliptic_operations._hyperelliptic_abel_data.cache_clear(ctx)
+        fresh = evaluate(ctx)
+        matrices = zip(first, fresh) if second_kind else ((first, fresh),)
+        assert all(ctx.norm(a-b) < 1000*ctx.eps for a, b in matrices)
+    assert ctx.dps == 15
+    other = mp.clone()
+    evaluate(other)
+    assert hyperelliptic_operations._hyperelliptic_abel_data.cache_info(other).misses == 1
 
 
 def hyperelliptic_periods(coefficients, **kwargs):

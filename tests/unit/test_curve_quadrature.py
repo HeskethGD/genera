@@ -6,8 +6,72 @@ from generapy.curves.continuation import _continue_plane_curve_sheets_adaptive
 from generapy.curves.integration import _integrate_plane_curve_path
 from generapy.curves.polynomial import _prepare_plane_curve
 from generapy.curves.quadrature import (
+    _gauss_legendre_rule,
     _geometric_edge_panels, _geometric_quadrature_order, _legendre_edge_rule,
 )
+
+
+def test_gauss_rule_reuses_immutable_data_and_separates_precision_and_context(monkeypatch):
+    ctx = mp.clone()
+    ctx.dps = 20
+    from generapy.curves import quadrature
+    original = quadrature._legendre_edge_rule
+    calls = []
+    exposed = []
+
+    def counted(context, order):
+        if context is ctx:
+            calls.append((ctx.prec, order))
+        result = list(original(context, order))
+        exposed.append(result)
+        return result
+
+    monkeypatch.setattr(quadrature, '_legendre_edge_rule', counted)
+    first = _gauss_legendre_rule(ctx, 8)
+    assert _gauss_legendre_rule(ctx, 8) is first
+    # The builder output can change without mutating the cached rule.
+    exposed[0][0] = (ctx.mpf(999), ctx.one)
+    assert _gauss_legendre_rule(ctx, 8)[0][0] < 1
+    with ctx.workdps(40):
+        higher = _gauss_legendre_rule(ctx, 8)
+        assert higher is not first
+        assert abs(ctx.fsum(weight*node**15 for node, weight in zip(*higher))-ctx.mpf(1)/16) < 100*ctx.eps
+    assert _gauss_legendre_rule(ctx, 8) is first
+    assert len(calls) == 2
+    other = mp.clone()
+    other.dps = 20
+    assert _gauss_legendre_rule(other, 8) is not first
+    assert _gauss_legendre_rule(ctx, 12) is not first
+    assert len(calls) == 3
+    assert _gauss_legendre_rule.cache_info(ctx).maxsize == 32
+
+
+@pytest.mark.parametrize('kind', ['path', 'iterated', 'chart'])
+def test_repeated_integrations_reuse_rules_without_caching_form_values(monkeypatch, kind):
+    from generapy.curves.continuation import _continue_plane_curve_branch
+    from generapy.curves.integration import _integrate_plane_curve_branch, _integrate_plane_curve_path_iterated
+    ctx = mp.clone()
+    ctx.dps = 20
+    curve = _prepare_plane_curve(ctx, {(0, 1): 1, (0, 0): -1})
+    if kind == 'chart':
+        lift = _continue_plane_curve_branch(ctx, curve, (0, 1), 1)
+        integrate = _integrate_plane_curve_branch
+    else:
+        lift = _continue_plane_curve_sheets_adaptive(ctx, curve, (0, 1))
+        integrate = _integrate_plane_curve_path_iterated if kind == 'iterated' else _integrate_plane_curve_path
+    from generapy.curves import quadrature
+    original = quadrature._legendre_edge_rule
+    calls = []
+
+    def counted(*args, **kwargs):
+        calls.append(1)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(quadrature, '_legendre_edge_rule', counted)
+    for coefficient in (1, 2):
+        result = integrate(ctx, curve, lift, (lambda x, y: coefficient*x,), quadrature_order=8)
+        assert abs(result.values[0]-ctx.mpf(coefficient)/2) < 100*ctx.eps
+    assert len(calls) == 1
 
 
 @pytest.mark.parametrize("dps", (20, 30, 40))
@@ -69,8 +133,8 @@ def test_edge_panel_work_and_representability_limits(monkeypatch):
             quadrature._geometric_edge_panels(mp, 0, 1, (1j,), max_panels=0)
 
 
-@pytest.mark.parametrize("dps", (15, 40))
-@pytest.mark.parametrize("order", (3, 8, 24))
+@pytest.mark.parametrize("dps", (15, 40, 80))
+@pytest.mark.parametrize("order", (3, 8, 24, 80, 160))
 def test_edge_rule_matches_builtin_gaussian_quadrature(dps, order):
     ctx = mp.clone()
     ctx.dps = dps

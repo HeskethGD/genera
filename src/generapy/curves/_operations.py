@@ -4,6 +4,7 @@ from ._context import _curve_cache_state
 from ._hyperelliptic import _hyperelliptic_abel_map
 from ._hyperelliptic.jacobian import _hyperelliptic_characteristic
 from ._hyperelliptic.model import _normalize_abel_targets
+from ._hyperelliptic.operations import _hyperelliptic_local_abel_difference
 from ._records import (
     CurveBranchLocus,
     CurveCheck,
@@ -604,25 +605,29 @@ def abel_map(ctx, curve, target, differentials=None, *, second_kind=False,
             raise ValueError("base_place must be one affine point (x, y)")
         transformed_base = _to_hyperelliptic_points(
             ctx, hyperelliptic_model, base_points)[0]
-        target_result = _hyperelliptic_abel_map(
+        result = (None if second_kind else _hyperelliptic_local_abel_difference(
             ctx, hyperelliptic_model.coefficients, transformed_targets,
-            second_kind=second_kind)
-        base_result = _hyperelliptic_abel_map(
-            ctx, hyperelliptic_model.coefficients, transformed_base,
-            second_kind=second_kind)
-        if second_kind:
-            first = target_result[0] - len(targets) * base_result[0]
-            second = target_result[1] - len(targets) * base_result[1]
-            shift = None
-            if reduce:
-                first_periods = periods(ctx, curve)
-                second_periods = periods(
-                    ctx, curve, second_kind=True)
-                second, shift = _reduce_second_kind_abel(
-                    ctx, first, second, first_periods, second_periods)
-            return CurveAbelMapKind2(
-                second, shift, "hyperelliptic", "baker")
-        result = target_result - len(targets) * base_result
+            transformed_base))
+        if result is None:
+            target_result = _hyperelliptic_abel_map(
+                ctx, hyperelliptic_model.coefficients, transformed_targets,
+                second_kind=second_kind)
+            base_result = _hyperelliptic_abel_map(
+                ctx, hyperelliptic_model.coefficients, transformed_base,
+                second_kind=second_kind)
+            if second_kind:
+                first = target_result[0] - len(targets) * base_result[0]
+                second = target_result[1] - len(targets) * base_result[1]
+                shift = None
+                if reduce:
+                    first_periods = periods(ctx, curve)
+                    second_periods = periods(
+                        ctx, curve, second_kind=True)
+                    second, shift = _reduce_second_kind_abel(
+                        ctx, first, second, first_periods, second_periods)
+                return CurveAbelMapKind2(
+                    second, shift, "hyperelliptic", "baker")
+            result = target_result - len(targets) * base_result
         shift = None
         if reduce:
             reduced = lattice_reduce(ctx, result, periods(ctx, curve))

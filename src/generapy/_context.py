@@ -20,6 +20,7 @@ def _context_state(ctx):
         ctx.prec,
         getattr(ctx, "rounding", None),
         getattr(ctx, "trap_complex", None),
+        tuple(getattr(ctx, "_prec_rounding", ())),
     )
 
 

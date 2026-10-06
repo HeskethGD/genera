@@ -83,6 +83,23 @@ def test_ctx_lru_cache_is_separate_for_each_context():
     assert evaluate.cache_info(second).hits == 0
 
 
+def test_ctx_lru_cache_separates_internal_mpmath_rounding_modes():
+    calls = []
+
+    @ctx_lru_cache()
+    def evaluate(ctx):
+        calls.append(ctx._prec_rounding[1])
+        return ctx._prec_rounding[1]
+
+    ctx = mp.clone()
+    assert evaluate(ctx) == 'n'
+    ctx._prec_rounding[1] = 'f'
+    assert evaluate(ctx) == 'f'
+    ctx._prec_rounding[1] = 'n'
+    assert evaluate(ctx) == 'n'
+    assert calls == ['n', 'f']
+
+
 def test_ctx_lru_cache_clear_can_target_one_context_or_all_contexts():
     calls = []
 

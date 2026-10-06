@@ -302,6 +302,39 @@ these methods do not provide.
 The :ref:`Bobenko residue calculation <bobenko-flow-residues>` uses
 ``chart_integral()`` on a closed local loop to obtain the flow velocity.
 
+Repeated local integrations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For repeated first-kind evaluations on a recognised hyperelliptic curve,
+use ``abel_map_kind_1`` with the automatic Baker basis when those are the
+desired coordinates. Roots, branch-to-branch integrals, and reference branch
+values are reused independently of the moving target. Each target is still
+validated and its remaining integral is evaluated again. A fixed finite base
+uses only branch-to-point integrals when its prescribed branch reference
+matches every target reference: the common reference values cancel before
+integration. Different branch references retain the full marked Abel
+calculation. This preserves the prescribed paths, including their periods.
+
+For increments along a chosen regular path, use ``Curve.path`` followed by
+``Curve.integral``. Reuse the ``CurvePath`` when evaluating the same lifted
+path with different forms; construct a new path when the endpoints change.
+Gauss nodes and weights are reused across calls at the same working
+precision, including calls on newly constructed paths. Cold rules use
+symmetric Legendre root iteration. A chosen path integral
+can differ from the Abel map's prescribed path by periods, so keep the path
+and marking consistent when accumulating trajectory increments.
+
+Use ``chart_integral`` when a local parameter is needed at a ramification
+point or a place at infinity. It also reuses quadrature rules, but retains
+general polynomial continuation, node correction, and branch-consistency
+checks. Explicit regularised quadrature can remain faster when the integrand
+and its continuous square-root sheet are already known.
+
+The setup caches are bounded and separate numerical contexts and working
+precisions, including guard precision. Returned Abel matrices remain fresh;
+changing a returned matrix does not modify cached data. The first call still
+pays for setup, and the fastest route depends on the path and forms.
+
 Local charts
 ~~~~~~~~~~~~
 

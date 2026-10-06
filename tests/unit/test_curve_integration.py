@@ -135,14 +135,15 @@ def test_checked_chart_tail_checks_each_component_and_bounds_work(monkeypatch):
     ctx.dps = 20
     curve = _prepare_plane_curve(ctx, {(0, 1): 1, (0, 0): -1})
     branch = _continue_plane_curve_branch(ctx, curve, (0, 1), 1)
-    original = ctx.gauss_quadrature
+    from generapy.curves import quadrature
+    original = quadrature._legendre_edge_rule
     orders = []
 
-    def counted(order, *args, **kwargs):
+    def counted(context, order):
         orders.append(order)
-        return original(order, *args, **kwargs)
+        return original(context, order)
 
-    monkeypatch.setattr(ctx, 'gauss_quadrature', counted)
+    monkeypatch.setattr(quadrature, '_legendre_edge_rule', counted)
     # A large convergent component must not hide a smaller divergent one.
     forms = (lambda t, w: ctx.mpf('1e100'), lambda t, w: 1/t**2)
     with pytest.raises(ctx.NoConvergence, match='endpoint may be a pole'):
@@ -334,15 +335,11 @@ def test_chart_quadrature_reports_a_stalled_node_correction(monkeypatch):
     ctx = mp.clone()
     curve = _prepare_plane_curve(ctx, {(0, 2): 1, (1, 0): -1})
     branch = _continue_plane_curve_branch(ctx, curve, (1, 2), 1)
-    derivative = curve_integration._evaluate_plane_derivative
-
-    def stalled_derivative(context, prepared, x, y, variable):
-        if variable == "y":
-            return context.zero
-        return derivative(context, prepared, x, y, variable)
+    def stalled_corrector(context, prepared, x, prediction, **options):
+        return prediction, context.one, context.zero, context.one, False
 
     monkeypatch.setattr(
-        curve_integration, "_evaluate_plane_derivative", stalled_derivative)
+        curve_integration, "_newton_plane_curve_sheet", stalled_corrector)
     with pytest.raises(ctx.NoConvergence, match="node did not resolve"):
         curve_integration._integrate_plane_curve_branch(
             ctx, curve, branch, (lambda t, u: 1,), quadrature_order=4)
