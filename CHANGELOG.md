@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Performance
+
+- Reuse immutable Gauss rules across repeated path and chart integrations,
+  with bounded caches separated by numerical context and precision; construct
+  cold rules using symmetric Legendre root iteration.
+- Reuse invariant hyperelliptic Abel data across moving targets and finite
+  bases, while retaining target validation and fresh returned matrices.
+  Cancel shared branch references in finite-base first-kind Abel maps before
+  integration, preserving the marked branch-to-point paths.
+- Use the existing fibre-polynomial Newton corrector for chart quadrature
+  nodes while retaining branch-consistency checks.
+
 ### Fixed
 
 - Chart continuation now checks local sheet separation and full-step/half-step

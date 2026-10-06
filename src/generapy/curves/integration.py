@@ -7,11 +7,13 @@ from .polynomial import (
     _evaluate_plane_derivative,
     _evaluate_plane_polynomial,
     _minimum_cost_assignment,
+    _newton_plane_curve_sheet,
     _newton_plane_curve_sheet_with_derivatives,
     _plane_curve_sheets,
     _plane_curve_sheet_separation_bound,
 )
 from .quadrature import (
+    _gauss_legendre_rule,
     _REUSABLE_GAUSS_ORDERS,
     _geometric_edge_panels,
     _geometric_quadrature_order,
@@ -243,8 +245,7 @@ def _integrate_plane_curve_path(
 
     def rule(order):
         if order not in rules:
-            nodes, weights = ctx.gauss_quadrature(order, "legendre01")
-            rules[order] = tuple(nodes), tuple(weights)
+            rules[order] = _gauss_legendre_rule(ctx, order)
         return rules[order]
 
     def integrate_segment(
@@ -387,8 +388,7 @@ def _integrate_plane_curve_path_iterated(
 
     def rule(order):
         if order not in rules:
-            nodes, weights = ctx.gauss_quadrature(order, "legendre01")
-            parameters, weights = tuple(nodes), tuple(weights)
+            parameters, weights = _gauss_legendre_rule(ctx, order)
             rules[order] = (
                 parameters,
                 weights,
@@ -598,25 +598,16 @@ def _integrate_plane_curve_branch(
             previous = current
         raise ctx.NoConvergence(
             "chart quadrature did not converge; the endpoint may be a pole")
-    nodes, weights = ctx.gauss_quadrature(quadrature_order, "legendre01")
-    parameters, weights = tuple(nodes), tuple(weights)
-
-    def polynomial_scale(t, u):
-        return max(ctx.one, ctx.fsum(
-            abs(coefficient * t ** t_power * u ** u_power)
-            for t_power, u_power, coefficient in curve.terms))
+    parameters, weights = _gauss_legendre_rule(ctx, quadrature_order)
 
     def solve(t, initial):
-        value = initial
-        for unused in range(20):
-            residual = _evaluate_plane_polynomial(ctx, curve, t, value)
-            if abs(residual) <= 100 * ctx.eps * polynomial_scale(t, value):
-                return value, abs(residual)
-            derivative = _evaluate_plane_derivative(
-                ctx, curve, t, value, "y")
-            if not derivative:
-                break
-            value -= residual / derivative
+        # Assemble the fibre polynomial once and use the existing Horner
+        # corrector, including its fast path for pure covers. The following
+        # separation and endpoint checks still decide branch consistency.
+        value, residual, unused_derivative, unused_scale, converged = _newton_plane_curve_sheet(
+            ctx, curve, t, initial, allow_degree_drop=True)
+        if converged and ctx.isfinite(value):
+            return value, abs(residual)
         raise ctx.NoConvergence(
             "quadrature node did not resolve the chart branch")
 

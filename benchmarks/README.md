@@ -117,6 +117,26 @@ continuation and quadrature-rule construction. Continuation samples average
 Accuracy is reported alongside timing so an incorrect result is not treated
 as a successful performance baseline.
 
+### Repeated Local Integral Benchmarks
+
+Reproduce the real branch-to-point and complex regular-interval comparisons
+from issue #5, evaluating both first-kind forms and checking every sample:
+
+```bash
+.venv/bin/python benchmarks/curves/benchmark_local_integrals.py \
+  --source src --digits 20 40 80 --trials 5
+```
+
+Use `--source` to select another checkout or saved source snapshot, in a
+separate sequential run. The script reports the first call to each method
+and subsequent warm medians, excluding construction and reference evaluation.
+Each method starts with a fresh context and curve, so its first call uses cold
+Generapy caches; these timings exclude Python imports and are not process
+startup measurements. Warm calls evaluate
+both integrals again. JSON output records all samples, accuracy, dependency
+versions, machine information, and a source hash for experimental changes.
+Run without competing tests or benchmarks.
+
 ### Riemann Theta Benchmarks
 
 **Compare against Wolfram Engine:**

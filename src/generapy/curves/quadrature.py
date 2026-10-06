@@ -1,5 +1,18 @@
 """Quadrature policies for numerical algebraic-curve integration."""
 
+from .._context import ctx_lru_cache
+
+
+@ctx_lru_cache(maxsize=32)
+def _gauss_legendre_rule(ctx, order):
+    """Reuse immutable Gauss nodes and weights at the working precision.
+
+    The cache is bounded per context and keyed by numerical state and order,
+    including any guard precision active during the integration.
+    """
+    rule = _legendre_edge_rule(ctx, order)
+    return tuple(node for node, weight in rule), tuple(weight for node, weight in rule)
+
 
 _REUSABLE_GAUSS_ORDERS = (8, 12, 16, 24, 32, 48, 64, 96, 128)
 # Geometry-selected panels can use finer buckets without changing the
