@@ -19,6 +19,44 @@ from generapy.curves.polynomial import (
 )
 
 
+@pytest.mark.parametrize('roots', [
+    (2,), (1, -1), (1, 2, 4), (1j, -1j, 3, -2), (1, 1), (1, 1, 2),
+])
+def test_sheet_separation_bound_does_not_exceed_actual_gap(roots):
+    ctx = mp.clone()
+    ctx.dps = 40
+    coefficients = [ctx.one]
+    for root in roots:
+        coefficients = _polynomial_multiply(ctx, coefficients, [-ctx.convert(root), ctx.one])
+    curve = _prepare_plane_curve(ctx, {(0, degree): value
+                                     for degree, value in enumerate(coefficients) if value})
+    for index, root in enumerate(roots):
+        bound = curve_polynomial._plane_curve_sheet_separation_bound(ctx, curve, 0, ctx.convert(root))
+        actual = min((abs(root-other) for j, other in enumerate(roots) if j != index), default=ctx.inf)
+        assert 0 <= bound <= actual + 100*ctx.eps
+        if actual > 0:
+            assert bound > 0
+        else:
+            assert bound == 0
+
+
+@pytest.mark.parametrize('constant', [0, 1])
+def test_sheet_separation_is_zero_when_the_fibre_has_no_isolated_root(constant):
+    # At x=0, x*y+constant either vanishes for every y or for no y.
+    curve = _prepare_plane_curve(mp, {(1, 1): 1, (0, 0): constant})
+    assert curve_polynomial._plane_curve_sheet_separation_bound(mp, curve, 0, 1) == 0
+
+
+def test_sheet_separation_and_newton_allow_a_finite_chart_degree_drop():
+    curve = _prepare_plane_curve(mp, {(2, 2): 1, (0, 1): -1, (0, 0): -1})
+    assert curve_polynomial._plane_curve_sheet_separation_bound(mp, curve, 0, -1) == mp.inf
+    value, residual, derivative, scale, converged = curve_polynomial._newton_plane_curve_sheet(
+        mp, curve, 0, -2, allow_degree_drop=True)
+    assert converged and value == -1 and residual == 0
+    with pytest.raises(ValueError, match='degree drops'):
+        curve_polynomial._newton_plane_curve_sheet(mp, curve, 0, -2)
+
+
 @pytest.mark.parametrize("dividend,divisor", [
     ((1,), (1, 1)),
     ((1, 2, 1), (1, 1)),

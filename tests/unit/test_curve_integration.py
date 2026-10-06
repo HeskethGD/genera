@@ -346,3 +346,33 @@ def test_chart_quadrature_reports_a_stalled_node_correction(monkeypatch):
     with pytest.raises(ctx.NoConvergence, match="node did not resolve"):
         curve_integration._integrate_plane_curve_branch(
             ctx, curve, branch, (lambda t, u: 1,), quadrature_order=4)
+
+
+def test_chart_quadrature_rejects_a_converged_wrong_endpoint_label():
+    from generapy.curves.continuation import _continue_plane_curve_branch
+    ctx = mp.clone()
+    ctx.dps = 30
+    curve = _prepare_plane_curve(ctx, {(0, 2): 1, (0, 0): -1})
+    branch = _continue_plane_curve_branch(ctx, curve, (0, 1), 1)
+    # Both endpoints satisfy F=0, but they cannot belong to one lift of
+    # this constant two-sheet cover. Newton at a node still converges.
+    wrong = branch._replace(values=(ctx.one, -ctx.one))
+    with pytest.raises(ctx.NoConvergence, match='changed the branch label'):
+        curve_integration._integrate_plane_curve_branch(
+            ctx, curve, wrong, (lambda t, u: u,), quadrature_order=4)
+
+
+def test_chart_quadrature_refines_an_ambiguous_node_on_the_correct_branch():
+    from generapy.curves.continuation import _continue_plane_curve_branch
+    ctx = mp.clone()
+    ctx.dps = 30
+    curve = _prepare_plane_curve(ctx, {(0, 2): 1, (0, 0): -1, (2, 0): -100})
+    branch = _continue_plane_curve_branch(ctx, curve, (-1, 1), ctx.sqrt(101))
+    coarse = branch._replace(path=(-ctx.one, ctx.one),
+                             values=(ctx.sqrt(101), ctx.sqrt(101)), steps=1)
+    integral = curve_integration._integrate_plane_curve_branch(
+        ctx, curve, coarse, (lambda t, u: 1/u,), quadrature_order=96)
+    reference = ctx.asinh(10)/5
+    # This deliberately coarse panel tests branch selection, not the
+    # accuracy of a fixed quadrature rule at a nearby complex singularity.
+    assert abs(integral.values[0]-reference) < ctx.mpf('1e-8')

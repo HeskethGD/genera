@@ -310,12 +310,15 @@ def _evaluate_plane_derivative(ctx, curve, x, y, variable):
     raise ValueError("variable must be 'x' or 'y'")
 
 
-def _plane_polynomial_y_coefficients(ctx, curve, x):
+def _plane_polynomial_y_coefficients(ctx, curve, x, allow_degree_drop=False):
     """Return ascending coefficients of ``F(x, y)`` as a polynomial in y."""
     coefficients = [ctx.zero] * (curve.y_degree + 1)
     for x_power, y_power, coefficient in curve.terms:
         coefficients[y_power] += coefficient * x ** x_power
-    if not coefficients[-1]:
+    if allow_degree_drop:
+        while len(coefficients) > 1 and not coefficients[-1]:
+            coefficients.pop()
+    elif not coefficients[-1]:
         raise ValueError(
             "the projection degree drops at the requested x value")
     return coefficients
@@ -387,16 +390,47 @@ def _newton_polynomial_root(ctx, coefficients, prediction, maxsteps):
 
 
 def _newton_plane_curve_sheet(
-        ctx, curve, x, prediction, maxsteps=20):
+        ctx, curve, x, prediction, maxsteps=20, allow_degree_drop=False):
     """Correct one predicted sheet above ``x`` by Newton iteration.
 
     Return ``(value, residual, derivative, scale, converged)``.  Evaluating
     the fibre polynomial and its derivative together by Horner's rule is
     substantially cheaper than resolving every sheet with ``polyroots``.
+    ``allow_degree_drop`` permits a finite chart branch when other sheets
+    escape to infinity at an endpoint.
     """
-    coefficients = _plane_polynomial_y_coefficients(ctx, curve, x)
+    coefficients = _plane_polynomial_y_coefficients(ctx, curve, x, allow_degree_drop=allow_degree_drop)
     return _newton_polynomial_root(
         ctx, coefficients, prediction, maxsteps)
+
+
+def _plane_curve_sheet_separation_bound(ctx, curve, x, root):
+    """Estimate a lower bound on the distance to another finite sheet.
+
+    At an exact simple root, write F(root+z) = a1*z + ... + an*z**n.
+    Every other root has |z| >= min_k (|a1|/((n-1)*|ak|))**(1/(k-1)),
+    by the triangle inequality. Numerically corrected roots make this a
+    working-precision safeguard, not a certified root isolation bound.
+    Only fibre coefficients are needed; other sheets need not be solved.
+    """
+    coefficients = _plane_polynomial_y_coefficients(ctx, curve, x, allow_degree_drop=True)
+    degree = len(coefficients) - 1
+    if not degree:
+        return ctx.zero
+    if degree == 1:
+        return ctx.inf
+    if degree == 2:
+        return abs(coefficients[1] + 2 * coefficients[2] * root) / abs(coefficients[2])
+    # Taylor coefficients by repeated synthetic division at root.
+    shifted = list(coefficients)
+    for order in range(degree):
+        for index in range(degree - 1, order - 1, -1):
+            shifted[index] += root * shifted[index + 1]
+    derivative = abs(shifted[1])
+    if not derivative:
+        return ctx.zero
+    return min(ctx.root(derivative / ((degree - 1) * abs(value)), order - 1)
+               for order, value in enumerate(shifted[2:], 2) if value)
 
 
 def _newton_plane_curve_sheet_with_derivatives(

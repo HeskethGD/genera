@@ -63,6 +63,90 @@ def test_branch_and_sheet_refinement_resolve_large_steps():
     assert ctx.dps == 25
 
 
+@pytest.mark.parametrize('scale', ['1', '1e-12', '1e12'])
+def test_branch_refinement_preserves_sheet_under_ordinate_scaling(scale):
+    ctx = mp.clone()
+    ctx.dps = 40
+    scale = ctx.mpf(scale)
+    terms = {(0, 2): 1, (0, 0): -96*scale**2, (2, 0): -200*scale**2,
+             (4, 0): -140*scale**2, (6, 0): -40*scale**2, (8, 0): -4*scale**2}
+    curve = _prepare_plane_curve(ctx, terms)
+    end, seed = ctx.sqrt(6), scale*ctx.sqrt(20160)
+    with pytest.raises(ctx.NoConvergence, match='did not resolve'):
+        continuation._continue_plane_curve_branch(
+            ctx, curve, (-end, end), seed, max_refinements=0)
+    result = continuation._continue_plane_curve_branch(ctx, curve, (-end, end), seed)
+    assert all(ctx.re(value) > 0 for value in result.values)
+    assert all(abs(ctx.im(value)) < 1000*ctx.eps for value in result.values)
+    assert abs(result.values[-1]/scale-ctx.sqrt(20160)) < 10000*ctx.eps*max(1, 1/scale**2)
+
+
+def test_branch_step_doubling_detects_hidden_sheet_switch(monkeypatch):
+    """A converged full step can disagree with the half-step lift."""
+    ctx = mp.clone()
+    ctx.dps = 30
+    curve = _prepare_plane_curve(ctx, {(0, 2): 1, (0, 0): -1})
+    correct = continuation._newton_plane_curve_sheet
+
+    def wrong_full_step(context, prepared, x, prediction, **options):
+        if x == 1 and prediction == 1:
+            return (-ctx.one, ctx.zero, -2*ctx.one, 2*ctx.one, True)
+        return correct(context, prepared, x, prediction, **options)
+
+    # Loosen the separation safeguard to exercise the independent
+    # step-doubling check; the half steps use the ordinary corrector.
+    monkeypatch.setattr(continuation, '_plane_curve_sheet_separation_bound',
+                        lambda *args: ctx.mpf(10))
+    calls = []
+
+    def wrong_once(*args, **kwargs):
+        if not calls and args[2] == 1:
+            calls.append(True)
+            return wrong_full_step(*args, **kwargs)
+        return correct(*args, **kwargs)
+
+    monkeypatch.setattr(continuation, '_newton_plane_curve_sheet', wrong_once)
+    with pytest.raises(ctx.NoConvergence, match='did not resolve'):
+        continuation._continue_plane_curve_branch(ctx, curve, (0, 1), 1, max_refinements=0)
+
+
+def test_branch_continuation_raises_when_path_crosses_a_critical_fibre():
+    ctx = mp.clone()
+    ctx.dps = 30
+    curve = _prepare_plane_curve(ctx, {(0, 2): 1, (1, 0): -1})
+    with pytest.raises(ctx.NoConvergence, match='did not resolve'):
+        continuation._continue_plane_curve_branch(ctx, curve, (1, -1), 1)
+
+
+def test_branch_step_doubling_rejects_a_hidden_critical_midpoint():
+    """Endpoint fibres agree, but the midpoint branch is not simple."""
+    ctx = mp.clone()
+    ctx.dps = 30
+    # y**2 = 1 - 16*x**2*(1-x)**2: y=1 at both endpoints,
+    # with a stationary predictor at x=0, but y=0 at x=1/2.
+    curve = _prepare_plane_curve(ctx, {
+        (0, 2): 1, (0, 0): -1, (2, 0): 16, (3, 0): -32, (4, 0): 16})
+    with pytest.raises(ctx.NoConvergence, match='did not resolve'):
+        continuation._continue_plane_curve_branch(
+            ctx, curve, (0, 1), 1, max_refinements=0)
+
+
+def test_branch_refinement_reports_an_unrepresentable_midpoint(monkeypatch):
+    ctx = mp.clone()
+    ctx.dps = 30
+    left, right = ctx.one, ctx.one + ctx.eps
+    assert left != right and (left + right)/2 == left
+    curve = _prepare_plane_curve(ctx, {(0, 2): 1, (0, 0): -1})
+
+    def unresolved(context, prepared, x, prediction, **options):
+        return prediction, context.one, context.one, context.one, False
+
+    # A failed correction must not recurse on indistinguishable waypoints.
+    monkeypatch.setattr(continuation, '_newton_plane_curve_sheet', unresolved)
+    with pytest.raises(ctx.NoConvergence, match='cannot be subdivided further'):
+        continuation._continue_plane_curve_branch(ctx, curve, (left, right), 1)
+
+
 def test_sheet_refinement_recovers_from_a_failed_root_solve(monkeypatch):
     ctx = mp.clone()
     ctx.dps = 20

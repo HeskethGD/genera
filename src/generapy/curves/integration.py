@@ -1,7 +1,7 @@
 """Numerical integration along lifted algebraic-curve paths."""
 
 from ._records import _IteratedPathIntegrals, _PathIntegrals
-from .continuation import _LiftedEdgeSampler
+from .continuation import _LiftedEdgeSampler, _continue_plane_curve_branch
 from .differentials import _evaluate_baker_basis
 from .polynomial import (
     _evaluate_plane_derivative,
@@ -9,6 +9,7 @@ from .polynomial import (
     _minimum_cost_assignment,
     _newton_plane_curve_sheet_with_derivatives,
     _plane_curve_sheets,
+    _plane_curve_sheet_separation_bound,
 )
 from .quadrature import (
     _REUSABLE_GAUSS_ORDERS,
@@ -561,6 +562,8 @@ def _integrate_plane_curve_branch(
         check_convergence=False):
     """Integrate coefficients of ``dt`` along one continued chart branch.
 
+    Node corrections are constrained by local sheet separation. Ambiguous
+    nodes are continued adaptively and must reproduce the endpoint label.
     Optional bounded order refinement checks each component separately.
     It does not certify absence of poles or regularize divergent integrals.
     """
@@ -627,11 +630,29 @@ def _integrate_plane_curve_branch(
             continue
         left_u = continuation.values[segment]
         right_u = continuation.values[segment + 1]
+        endpoint_gap = min(
+            _plane_curve_sheet_separation_bound(ctx, curve, left_t, left_u),
+            _plane_curve_sheet_separation_bound(ctx, curve, right_t, right_u))
         contributions = [[] for unused in differentials]
         for parameter, weight in zip(parameters, weights):
             t = left_t + parameter * delta_t
             prediction = left_u + parameter * (right_u - left_u)
             u, residual = solve(t, prediction)
+            gap = min(endpoint_gap, _plane_curve_sheet_separation_bound(ctx, curve, t, u))
+            if (abs(u - prediction) > gap / 5
+                    or max(abs(u - left_u), abs(u - right_u)) > 2 * gap / 5
+                    or not gap):
+                # A small residual alone cannot identify the continued root.
+                # Resolve an ambiguous query from the left endpoint and
+                # require it to reproduce the existing right endpoint label.
+                refined = _continue_plane_curve_branch(
+                    ctx, curve, (left_t, t, right_t), left_u)
+                tolerance = endpoint_gap / 10
+                if abs(refined.values[-1] - right_u) > tolerance:
+                    raise ctx.NoConvergence(
+                        "chart quadrature refinement changed the branch label")
+                u = refined.values[refined.path.index(t)]
+                residual = abs(_evaluate_plane_polynomial(ctx, curve, t, u))
             max_sheet_residual = max(max_sheet_residual, residual)
             for index, differential in enumerate(differentials):
                 contributions[index].append(weight * differential(t, u))

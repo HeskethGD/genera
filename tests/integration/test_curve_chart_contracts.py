@@ -13,6 +13,34 @@ from mpmath import mp
 TERMS = {(0, 2): 1, (1, 0): -1}
 
 
+@pytest.mark.parametrize('digits', [20, 40, 80])
+def test_turning_point_chart_integral_preserves_branch_for_coarse_path(digits):
+    """Issue #4: W is positive even though ambient Y changes sign."""
+    ctx = mp.clone()
+    ctx.dps = digits
+    curve = make_curve(ctx, {(0, 2): 1, (5, 0): -4, (3, 0): 20, (1, 0): -16})
+    chart = curve.chart(
+        {(0, 2): 1, (0, 0): -96, (2, 0): -200,
+         (4, 0): -140, (6, 0): -40, (8, 0): -4},
+        lambda t, w: (2+t*t, t*w, 2*t))
+    end, seed = ctx.sqrt(6), ctx.sqrt(20160)
+    forms = (lambda x, y: 1/y, lambda x, y: x/y)
+    reference = tuple(2*ctx.quad(
+        lambda t, k=k: (2+t*t)**k / ctx.sqrt((2+t*t)*((2+t*t)**2-1)*(4+t*t)),
+        [0, end]) for k in (0, 1))
+    coarse = curve.chart_integral(chart, forms, (-end, end), seed)
+    tolerance = 1000*ctx.eps
+    assert all(abs(a-b) < tolerance for a, b in zip(coarse.values, reference))
+    if digits == 40:
+        fine = curve.chart_integral(
+            chart, forms, tuple(-end+2*end*j/32 for j in range(33)), seed)
+        reverse = curve.chart_integral(chart, forms, (end, -end), seed)
+        negative = curve.chart_integral(chart, forms, (-end, end), -seed)
+        assert all(abs(a-b) < tolerance for a, b in zip(coarse.values, fine.values))
+        assert all(abs(a+b) < tolerance for a, b in zip(coarse.values, reverse.values))
+        assert all(abs(a+b) < tolerance for a, b in zip(coarse.values, negative.values))
+
+
 @pytest.mark.parametrize("polynomial,message", [
     (None, "sparse mapping"),
     ((), "sparse mapping"),
